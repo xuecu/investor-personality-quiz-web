@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>投資者性格探索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Noto+Serif+TC:wght@400;700&display=swap">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#F8F6FC;font-family:-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;}
+  #root{min-height:100vh;}
+  button{font-family:inherit;}
+  a{color:inherit;}
+  @keyframes pop{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+  @keyframes slide{from{left:50%}}
+  @keyframes ring{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+  .bar-dot{animation:slide .9s cubic-bezier(.2,.8,.2,1) both}
+  .type-badge{animation:ring .5s ease-out both}
+  .type-card{transition:transform .15s, box-shadow .15s}
+  .type-card:hover,.type-card:focus-visible{transform:translateY(-2px);box-shadow:0 6px 18px rgba(30,30,46,.10)}
+  @keyframes inR{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+  @keyframes inL{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .slide-in-right{animation:inR .38s cubic-bezier(.2,.8,.2,1) both}
+  .slide-in-left{animation:inL .38s cubic-bezier(.2,.8,.2,1) both}
+  .fade-in{animation:fade .3s ease both}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  p,h1,h2{text-wrap:pretty}
+  #next-tab{transition:transform .15s, box-shadow .15s}
+  #next-tab:hover{transform:translateY(-2px)}
+  button:focus-visible,a:focus-visible{outline:3px solid #C4B5FD;outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){.bar-dot,.type-badge,.slide-in-right,.slide-in-left,.fade-in{animation:none}.type-card,#next-tab{transition:none}}
+  @keyframes spinslow{to{transform:rotate(360deg)}}
+  .sigil-spin{animation:spinslow 24s linear infinite}
+  @media (prefers-reduced-motion: reduce){.sigil-spin{animation:none}}
+  /* ── 教練的信：牛皮紙＋燒開動畫 ── */
+  @property --burn { syntax:'<percentage>'; inherits:false; initial-value:0%; }
+  .parchment{position:relative;overflow:hidden;border-radius:4px;padding:30px 24px 26px;color:#3E2A14;
+    font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;
+    background:
+      radial-gradient(ellipse 60% 40% at 18% 22%, rgba(150,95,40,.18), transparent 70%),
+      radial-gradient(ellipse 45% 35% at 82% 78%, rgba(130,80,30,.16), transparent 70%),
+      radial-gradient(ellipse at 50% 45%, #F4E4C4 0%, #EAD3A4 52%, #D6B47A 82%, #A9773F 100%);
+    box-shadow:0 14px 34px rgba(60,35,10,.35), inset 0 0 46px rgba(110,62,22,.55), inset 0 0 8px rgba(60,30,10,.85);}
+  .parchment::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.42;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.22 0 0 0 0 0.08 0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+  .parchment::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 50%, transparent 62%, rgba(70,35,10,.28) 88%, rgba(40,18,5,.55) 100%);}
+  .parchment > .pc-body{position:relative;z-index:1}
+  .pc-title{font-family:"Cinzel","Noto Serif TC",serif;letter-spacing:3px}
+  .pc-card{background:rgba(255,246,222,.42);border:1px solid rgba(122,74,30,.28);border-radius:6px}
+  .pc-link{background:none;border:none;padding:0;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:#7A3E12;text-decoration:underline;text-underline-offset:3px}
+  .wax{position:relative;width:74px;height:74px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 35% 30%, #C8382F 0%, #9B1C1C 55%, #6E0F0F 100%);
+    box-shadow:0 3px 8px rgba(60,10,5,.45), inset 0 -3px 6px rgba(0,0,0,.35), inset 0 3px 5px rgba(255,160,140,.35);}
+  .wax::before{content:"";position:absolute;inset:7px;border-radius:50%;border:2px dashed rgba(255,215,190,.45)}
+  /* 燒開：焦黑層從中央往外退，邊緣是不規則的火線 */
+  .burn-char,.burn-ember{position:absolute;inset:-60px;z-index:3;pointer-events:none;animation:burn 2.8s cubic-bezier(.45,.05,.25,1) forwards}
+  .burn-char{filter:url(#burnEdge);
+    background:radial-gradient(circle at 50% 38%, transparent var(--burn), #2A1709 calc(var(--burn) + 2%), #120904 calc(var(--burn) + 10%))}
+  .burn-ember{filter:url(#burnEdge) blur(0.6px);mix-blend-mode:screen;
+    background:radial-gradient(circle at 50% 38%, transparent calc(var(--burn) - 2.5%), rgba(255,214,120,.95) calc(var(--burn) - 0.8%), rgba(255,110,20,.9) calc(var(--burn) + 0.8%), rgba(150,30,0,.55) calc(var(--burn) + 2.6%), transparent calc(var(--burn) + 4.5%))}
+  @keyframes burn{0%{--burn:0%;opacity:1}82%{opacity:1}100%{--burn:150%;opacity:0}}
+  .embers{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+  .ember{position:absolute;bottom:-10px;width:5px;height:5px;border-radius:50%;opacity:0;
+    background:radial-gradient(circle, #FFE39A 0%, #FF8A1F 55%, rgba(255,70,0,0) 100%);
+    box-shadow:0 0 8px 2px rgba(255,120,30,.75);animation:rise 2.6s ease-out forwards}
+  @keyframes rise{0%{opacity:0;transform:translate(0,0) scale(1)}15%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-340px) scale(.3)}}
+  .pc-reveal{animation:reveal 2.8s ease both}
+  @keyframes reveal{0%,30%{opacity:.0}60%{opacity:1}100%{opacity:1}}
+  @media (prefers-reduced-motion: reduce){.burn-char,.burn-ember,.embers{display:none}.pc-reveal{animation:none}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes drift{0%,100%{left:var(--from)}50%{left:var(--to)}}
+  .cover-dot{animation:drift 4.5s ease-in-out infinite}
+  #start-quiz:focus-visible,.type-card:focus-visible{outline:3px solid #C4B5FD;outline-offset:2px}
+  @keyframes draw{from{stroke-dashoffset:900}to{stroke-dashoffset:0}}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .trend-line{stroke-dasharray:900;animation:draw 2.4s ease-out both}
+  .trend-area{animation:fadein 1.2s ease-out .9s both}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .type-card:hover .type-icon{animation:bob .6s ease-in-out}
+  @media (prefers-reduced-motion: reduce){.cover-dot,.trend-line,.trend-area,.type-card:hover .type-icon{animation:none}.type-card{transition:none}}
+  /* 揭曉：三條光譜依序落點 → 你最接近 → 符文由暗轉亮 → 類型名 */
+  @keyframes rvIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes rvDot{from{left:50%;transform:translateX(-50%) scale(.6)}to{transform:translateX(-50%) scale(1)}}
+  @keyframes rvSigil{0%{opacity:0;transform:scale(.55) rotate(-25deg);filter:grayscale(1) blur(4px)}55%{opacity:1;filter:grayscale(.4) blur(0)}100%{opacity:1;transform:scale(1) rotate(0);filter:none}}
+  @keyframes rvGlow{0%{opacity:0;transform:scale(.4)}40%{opacity:.9}100%{opacity:0;transform:scale(1.9)}}
+  @keyframes rvName{0%{opacity:0;letter-spacing:14px;filter:blur(6px)}100%{opacity:1;letter-spacing:4px;filter:none}}
+  .rv{animation:rvIn .5s ease both}
+  .rv-dot{animation:rvDot .75s cubic-bezier(.2,.8,.2,1) both}
+  .rv-sigil{animation:rvSigil 1s cubic-bezier(.2,.8,.2,1) both}
+  .rv-glow{animation:rvGlow 1.2s ease-out both}
+  .rv-name{animation:rvName .8s cubic-bezier(.2,.8,.2,1) both}
+  @media (prefers-reduced-motion: reduce){.rv,.rv-dot,.rv-sigil,.rv-name{animation:none}.rv-glow{display:none}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
+<script src="quiz-core.js?v=8.3"></script>
+<script src="shared.js?v=8.3"></script>
+<script src="icons.js?v=8.3"></script>
+<script src="config.js?v=8.3"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// 測驗與結果合在同一個檔案：網址 # 後面沒有作答代碼時顯示測驗，有代碼（或 #types）時顯示結果。
+// 按鈕只改 # 標記、不寫檔名，所以檔案怎麼改名、放哪裡都連得回來。
+const { viewOf } = window.QUIZ_SHARED;
+
+// ── 測驗畫面 ──
+const QuizApp = (() => {
+const { useState, useEffect, useRef } = React;
+const Q = window.QUIZ;
+const { FONT, CLR, TYPE_CLR, encode, isSkipped, toggleMulti, validMulti, sampleAnswers, LINK } = window.QUIZ_SHARED;
+
+// 簡版流程（v8）：封面只有開始鈕；作答中途存在本機，重新整理或離開後可以接著做；題目、計分與完整版相同，只是文字精簡
+const NOW_TOTAL = Q.SAFE_QS.length + Q.POS_QS.length + Q.BEHAV_QS.length;
+const SECTIONS = [
+  { key:"scale", name:"性格探索", count:`${Q.SCALE_QS.length} 題` },
+  { key:"know",  name:"金融小挑戰", count:`${Q.KNOW_QS.length} 題`,
+    title:"第 2 關：金融小挑戰", desc:"有標準答案，不確定就選「不知道」。" },
+  { key:"now",   name:"你的現況", count:`${NOW_TOTAL - 2}～${NOW_TOTAL} 題`,
+    title:"第 3 關：你的現況", desc:"前面問的是「你會怎麼想」，這一關問的是「你實際做過什麼」。兩者不一樣很正常，結果會以你做過的事為準，照實回答就好。" },
+];
+const STEPS = [
+  ...Q.SCALE_QS.map((_, i) => ({ k:"scale", i })),
+  { k:"chapter", c:1 }, ...Q.KNOW_QS.map((_, i) => ({ k:"know", i })),
+  { k:"chapter", c:2 }, ...Q.SAFE_QS.map((_, i) => ({ k:"safe", i })), ...Q.POS_QS.map((_, i) => ({ k:"pos", i })), ...Q.BEHAV_QS.map((_, i) => ({ k:"behav", i })),
+];
+const TOTAL_Q = STEPS.filter(s => s.k !== "chapter").length;
+const skipStep = (step, answers) => (step.k === "pos" && isSkipped(Q.POS_QS[step.i], answers.pos)) || (step.k === "behav" && isSkipped(Q.BEHAV_QS[step.i], answers.pos));
+
+const PROGRESS_KEY = "investor-quiz-progress-v8";
+function readProgress() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PROGRESS_KEY));
+    if (!p || p.v !== 8 || !Array.isArray(p.orders) || p.orders.length !== Q.SCALE_QS.length || typeof p.pos !== "number") return null;
+    return p.pos > 0 ? p : null;
+  } catch (e) { return null; }
+}
+function writeProgress(p) { try { localStorage.setItem(PROGRESS_KEY, JSON.stringify({ v:8, ...p })); } catch (e) {} }
+function clearProgress() { try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {} }
+
+function shuffled(n) {
+  const r = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; }
+  return r;
+}
+
+const wrap = { maxWidth:640, margin:"0 auto", padding:"0 20px" };
+const cardS = { background:CLR.card, borderRadius:14, padding:"20px", boxShadow:"0 1px 8px rgba(0,0,0,0.05)" };
+const primaryBtn = (on = true) => ({ padding:"12px 30px", borderRadius:12, border:"none", fontSize:15, fontWeight:600,
+  cursor:on ? "pointer" : "default", color:on ? "#fff" : "#A5A5B5",
+  background:on ? `linear-gradient(135deg,${CLR.accent},${CLR.accentEnd})` : CLR.progressBg });
+const ghostBtn = { padding:"10px 18px", borderRadius:10, border:`1px solid ${CLR.border}`, background:CLR.card, color:CLR.sub, fontSize:14, cursor:"pointer" };
+
+function TopBar({ done, label }) {
+  const pct = (done / TOTAL_Q) * 100;
+  return (
+    <div style={{ position:"sticky", top:0, zIndex:10, background:"#ffffffee", backdropFilter:"blur(12px)", borderBottom:`1px solid ${CLR.border}`, padding:"10px 20px 12px" }}>
+      <div style={wrap}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, marginBottom:8 }}>
+          <span style={{ fontSize:14, fontWeight:700, color:CLR.text }}>投資者性格探索</span>
+          <a href={LINK.types} style={{ fontSize:12, color:CLR.sub, textDecoration:"none", border:`1px solid ${CLR.border}`, borderRadius:20, padding:"4px 12px", background:CLR.card, whiteSpace:"nowrap" }}>
+            看 8 種類型
+          </a>
+        </div>
+        <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:CLR.sub, marginBottom:6 }}>
+          <span>{label}</span><span>{Math.round(pct)}%</span>
+        </div>
+        <div style={{ height:4, borderRadius:2, background:CLR.progressBg }}>
+          <div style={{ height:"100%", borderRadius:2, background:`linear-gradient(90deg,${CLR.accent},${CLR.accentEnd})`, width:`${pct}%`, transition:"width 0.3s" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OptionButton({ text, selected, state, disabled, onClick }) {
+  const tone = state === "correct" || state === "answer" ? { b:CLR.good, bg:CLR.goodBg, c:CLR.good }
+    : state === "wrong" ? { b:CLR.bad, bg:CLR.badBg, c:CLR.bad }
+    : selected ? { b:CLR.accent, bg:"#F3EEFF", c:CLR.accent } : { b:CLR.border, bg:CLR.card, c:CLR.text };
+  const tag = state === "correct" ? "答對" : state === "answer" ? "正確答案" : state === "wrong" ? "你的答案" : null;
+  return (
+    <button onClick={onClick} disabled={disabled} style={{ ...cardS, padding:"14px 16px", textAlign:"left", fontSize:15, lineHeight:1.7,
+      color:tone.c, background:tone.bg, border:`${selected || state ? 2 : 1}px solid ${tone.b}`, cursor:disabled ? "default" : "pointer",
+      transition:"all 0.15s", display:"flex", alignItems:"center", gap:10 }}>
+      <span style={{ flex:1 }}>{text}</span>
+      {tag && <span style={{ fontSize:12, fontWeight:600, whiteSpace:"nowrap" }}>{tag}</span>}
+    </button>
+  );
+}
+
+// 線條圖示：路徑資料在 icons.js
+function Icon({ name, size = 20, color = "currentColor", stroke = 2 }) {
+  const ic = window.QUIZ_ICONS[name];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink:0 }}>
+      {(ic.circles || []).map(([cx, cy, r], i) => <circle key={"c" + i} cx={cx} cy={cy} r={r} />)}
+      {ic.paths.map((d, i) => <path key={i} d={d} />)}
+    </svg>
+  );
+}
+
+// 類型符文徽章（圖形資料在 icons.js）
+const BITS_OF = Object.fromEntries(Object.entries(Q.TYPE_KEY).map(([k, v]) => [v, k]));
+function Sigil({ name, size = 64, spin = false }) {
+  const c = TYPE_CLR[name], g = window.QUIZ_SIGIL(BITS_OF[name], name), id = "sg" + BITS_OF[name];
+  const round = g.frame === "circle";
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" aria-label={`${name}的符文`} role="img" style={{ flexShrink:0, display:"block", overflow:"visible" }}>
+      <defs>
+        <radialGradient id={id} cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stopColor="#fff" />
+          <stop offset="100%" stopColor={c.bg} />
+        </radialGradient>
+      </defs>
+      {round
+        ? <circle cx="50" cy="50" r="48" fill={`url(#${id})`} stroke={c.m} strokeOpacity="0.35" strokeWidth="1.5" />
+        : <path d={g.framePath} fill={`url(#${id})`} stroke={c.m} strokeOpacity="0.4" strokeWidth="1.8" strokeLinejoin="round" />}
+      {round && <path d={g.ticks} stroke={c.m} strokeOpacity="0.55" strokeWidth="1.6" strokeLinecap="round" />}
+      <g className={spin && round ? "sigil-spin" : undefined} style={{ transformOrigin:"50px 50px" }}>
+        {round
+          ? <circle cx="50" cy="50" r="36" fill="none" stroke={c.m} strokeOpacity="0.3" strokeWidth="1" strokeDasharray="2 5" />
+          : <path d={g.framePath} transform="translate(50 50) scale(0.8) translate(-50 -50)" fill="none" stroke={c.m} strokeOpacity="0.3" strokeWidth="1.2" strokeDasharray="2 5" />}
+      </g>
+      <g fill="none" stroke={c.m} strokeOpacity="0.7" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        {g.marks.map((d, i) => <path key={"m" + i} d={d} />)}
+      </g>
+      {g.markDots.map(([cx, cy, r], i) => <circle key={"md" + i} cx={cx} cy={cy} r={r} fill={c.m} fillOpacity="0.7" />)}
+      <g fill="none" stroke={c.m} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+        {g.rune.filter(e => e.t === "path").map((e, i) => <path key={i} d={e.d} />)}
+      </g>
+      {g.rune.filter(e => e.t === "dot").map((e, i) => <circle key={"d" + i} cx={e.cx} cy={e.cy} r={e.r} fill={c.m} />)}
+    </svg>
+  );
+}
+
+// 標題上方的行情走勢線：載入時畫出來
+const TREND = [[0,62],[24,56],[44,60],[66,44],[88,50],[110,34],[132,40],[154,26],[176,34],[198,20],[220,28],[242,14],[264,22],[286,10],[320,16]];
+function TrendArt() {
+  const line = TREND.map(([x, y]) => `${x},${y}`).join(" ");
+  return (
+    <svg viewBox="0 0 320 76" width="100%" height="76" preserveAspectRatio="none" aria-hidden="true" style={{ display:"block", maxWidth:420, margin:"0 auto" }}>
+      <defs>
+        <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={CLR.accent} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={CLR.accent} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon className="trend-area" points={`0,76 ${line} 320,76`} fill="url(#trendFill)" />
+      <polyline className="trend-line" points={line} fill="none" stroke={CLR.accent} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle className="trend-area" cx="286" cy="10" r="4.5" fill={CLR.accent} stroke="#fff" strokeWidth="2" />
+    </svg>
+  );
+}
+
+// 封面（簡版）：字少，但用光譜示意、數字和 8 種類型卡片撐起畫面
+const COVER_BARS = [
+  { d:"u", from:"22%", to:"78%", delay:"0s" },
+  { d:"r", from:"70%", to:"30%", delay:"-1.4s" },
+  { d:"m", from:"35%", to:"85%", delay:"-2.8s" },
+];
+
+function CoverScreen({ onStart, resume, onResume }) {
+  return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(180deg, #F3EEFF 0%, ${CLR.bg} 420px)` }}>
+      <div style={{ ...wrap, paddingTop:44, paddingBottom:48, display:"flex", flexDirection:"column", gap:22, animation:"pop 0.35s ease" }}>
+        <div style={{ textAlign:"center" }}>
+          <TrendArt />
+          <p style={{ fontSize:13, fontWeight:700, color:CLR.accent, letterSpacing:2, margin:"14px 0 10px" }}>投資者性格探索</p>
+          <h1 style={{ fontSize:32, fontWeight:800, color:CLR.text, lineHeight:1.35 }}>你是哪一種投資人？</h1>
+          <p style={{ fontSize:15, color:CLR.sub, marginTop:10 }}>面對漲跌、做決定、看待錢，測出你的位置</p>
+        </div>
+
+        <div aria-hidden="true" style={{ ...cardS, padding:"18px 22px", display:"flex", flexDirection:"column", gap:16 }}>
+          {COVER_BARS.map(b => {
+            const dim = Q.DIMS[b.d];
+            return (
+              <div key={b.d}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:CLR.sub, marginBottom:6, gap:8 }}>
+                  <span>{dim.low}</span>
+                  <span style={{ fontWeight:700, color:CLR.text, display:"inline-flex", alignItems:"center", gap:5 }}><Icon name={b.d} size={15} color={CLR.accent} />{dim.name}</span>
+                  <span>{dim.high}</span>
+                </div>
+                <div style={{ position:"relative", height:8, borderRadius:4, background:`linear-gradient(90deg, ${CLR.progressBg}, ${CLR.accentEnd})` }}>
+                  <div className="cover-dot" style={{ "--from":b.from, "--to":b.to, animationDelay:b.delay, position:"absolute", left:b.from, top:-5, transform:"translateX(-50%)",
+                    width:18, height:18, borderRadius:9, background:CLR.accent, border:"3px solid #fff", boxShadow:"0 1px 4px rgba(0,0,0,0.25)" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {resume && (
+          <div style={{ ...cardS, border:`2px solid ${CLR.accent}`, textAlign:"center", padding:"16px 20px" }}>
+            <p style={{ fontSize:15, fontWeight:700, color:CLR.text }}>你上次做到第 {resume.done} 題</p>
+            <p style={{ fontSize:13, color:CLR.sub, marginTop:4, marginBottom:12 }}>答案都還在，可以從那裡接著做</p>
+            <button id="resume-quiz" onClick={onResume} style={{ ...primaryBtn(), display:"inline-flex", alignItems:"center", gap:8 }}>繼續作答<Icon name="chevron" size={16} color="#fff" /></button>
+          </div>
+        )}
+        <div style={{ textAlign:"center" }}>
+          <button id="start-quiz" onClick={onStart} style={{ ...primaryBtn(), padding:"15px 48px", fontSize:17, boxShadow:"0 8px 22px rgba(109,40,217,0.28)", display:"inline-flex", alignItems:"center", gap:10 }}><Icon name="play" size={18} color="#fff" />{resume ? "重新開始" : "開始測驗"}</button>
+          <p style={{ fontSize:13, color:CLR.sub, marginTop:10 }}>{TOTAL_Q - 2}～{TOTAL_Q} 題・約 5～8 分鐘・沒有對錯</p>
+          <p style={{ fontSize:12, color:CLR.sub, marginTop:4 }}>結果僅供自我了解與學習規劃，不是針對個人的投資建議</p>
+        </div>
+
+        <div>
+          <p style={{ fontSize:13, fontWeight:700, color:CLR.text, textAlign:"center", marginBottom:12 }}>8 種類型，你會是哪一個？</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px, 1fr))", gap:10 }}>
+            {Object.entries(Q.TYPES).map(([name, t]) => (
+              <a key={name} className="type-card" href={LINK.result(encode(sampleAnswers(name)), true)}
+                style={{ display:"block", textDecoration:"none", background:TYPE_CLR[name].bg, borderRadius:12, padding:"12px 14px", border:`1px solid ${TYPE_CLR[name].m}22` }}>
+                <div className="type-icon" style={{ display:"flex", justifyContent:"center", marginBottom:8 }}><Sigil name={name} size={64} /></div>
+                <p style={{ fontSize:16, fontWeight:800, color:TYPE_CLR[name].m, textAlign:"center" }}>{name}</p>
+                <p style={{ fontSize:11, fontWeight:600, color:TYPE_CLR[name].m, marginTop:4, letterSpacing:.5, textAlign:"center" }}>{Q.typeTags(name).join("・")}</p>
+                <p style={{ fontSize:12, color:CLR.sub, marginTop:4, lineHeight:1.5, textAlign:"center" }}>{t.tag}</p>
+              </a>
+            ))}
+          </div>
+          <p style={{ fontSize:12, color:CLR.faint, textAlign:"center", marginTop:10 }}>點類型可以先看範例</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChapterScreen({ chapter, onNext, onBack, doneCount }) {
+  const s = SECTIONS[chapter];
+  return (
+    <div style={{ minHeight:"100vh", background:CLR.bg }}>
+      <TopBar done={doneCount} label={s.name} />
+      <div style={{ ...wrap, marginTop:48, animation:"pop 0.35s ease" }}>
+        <div style={{ ...cardS, padding:"32px 24px" }}>
+          <p style={{ fontSize:13, color:CLR.accent, fontWeight:600, marginBottom:8 }}>{s.count}</p>
+          <h2 style={{ fontSize:21, fontWeight:800, color:CLR.text, marginBottom:12 }}>{s.title}</h2>
+          <p style={{ fontSize:15, color:CLR.sub, lineHeight:1.9, marginBottom:24 }}>{s.desc}</p>
+          <div style={{ display:"flex", justifyContent:"space-between" }}>
+            <button onClick={onBack} style={ghostBtn}>上一題</button>
+            <button onClick={onNext} style={primaryBtn()}>繼續</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuestionScreen({ step, pos, answers, orders, onAnswer, onNext, onBack, doneCount }) {
+  const { k, i } = step;
+  const [pending, setPending] = useState(null);
+  useEffect(() => { setPending(null); }, [pos]);
+  let text, opts, selected, label, hint, note;
+  if (k === "scale") { const q = Q.SCALE_QS[i]; text = q.text; note = q.note; opts = orders[i].map(o => ({ o, t:q.opts[o].t })); selected = answers.scale[i]; label = `性格探索 ${i + 1} / ${Q.SCALE_QS.length}`; hint = "沒有對錯・還沒投資過的話，就想像你已經買了"; }
+  if (k === "know")  { const q = Q.KNOW_QS[i];  text = q.text; opts = q.opts.map((t, o) => ({ o, t })); selected = answers.know[i]; label = `金融小挑戰 ${i + 1} / ${Q.KNOW_QS.length}`; hint = "選好後按「確定答案」看解說，不確定就選「不知道」"; }
+  const nowTotal = NOW_TOTAL;
+  if (k === "safe")  { const q = Q.SAFE_QS[i];  text = q.text; opts = q.opts.map((t, o) => ({ o, t })); selected = answers.safe[i]; label = `你的現況 ${i + 1} / ${nowTotal}`; }
+  if (k === "pos")   { const q = Q.POS_QS[i];   text = q.text; opts = q.opts.map((t, o) => ({ o, t })); selected = answers.pos[i]; label = `你的現況 ${Q.SAFE_QS.length + i + 1} / ${nowTotal}`; }
+  if (k === "behav") { const q = Q.BEHAV_QS[i]; text = q.text; opts = q.opts.map((t, o) => ({ o, t })); selected = answers.behav[i]; label = `你的現況 ${Q.SAFE_QS.length + Q.POS_QS.length + i + 1} / ${nowTotal}`; }
+  const mq = k === "pos" ? Q.POS_QS[i] : k === "behav" ? Q.BEHAV_QS[i] : null;
+  const isMulti = !!(mq && mq.multi);
+  if (isMulti) hint = "可複選";
+  const canNext = isMulti ? validMulti(mq, selected) : selected !== null;
+  const isLast = step === STEPS[STEPS.length - 1];
+
+  const isKnow = k === "know";
+  const kq = isKnow ? Q.KNOW_QS[i] : null;
+  const revealed = isKnow && selected !== null;
+  const dontKnow = isKnow && selected === kq.opts.length - 1;
+  const optState = (o) => {
+    if (!revealed) return undefined;
+    if (o === kq.answer) return o === selected ? "correct" : "answer";
+    if (o === selected) return "wrong";
+    return undefined;
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:CLR.bg, paddingBottom:40 }}>
+      <TopBar done={doneCount} label={label} />
+      <div key={pos} style={{ ...wrap, marginTop:24, animation:"pop 0.3s ease" }}>
+        {hint && <p style={{ fontSize:12, color:CLR.accent, fontWeight:600, marginBottom:note ? 2 : 8 }}>{hint}</p>}
+        {note && <p style={{ fontSize:12, color:CLR.sub, marginBottom:8 }}>{note}</p>}
+        <h2 style={{ fontSize:19, fontWeight:700, color:CLR.text, lineHeight:1.7, marginBottom:20, whiteSpace:"pre-line" }}>{text}</h2>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {opts.map(({ o, t }) => (
+            <OptionButton key={o} text={t} selected={isKnow ? (!revealed && pending === o) : (isMulti ? (selected || []).includes(o) : selected === o)}
+              state={optState(o)} disabled={revealed} onClick={() => (isKnow ? setPending(o) : onAnswer(o))} />
+          ))}
+        </div>
+        {revealed && (
+          <div style={{ ...cardS, marginTop:14, padding:"14px 16px", boxShadow:"none", animation:"pop 0.3s ease",
+            background:selected === kq.answer ? CLR.goodBg : CLR.warnBg, border:`1px solid ${selected === kq.answer ? CLR.goodLine : CLR.warnLine}` }}>
+            <p style={{ fontSize:14, fontWeight:700, color:selected === kq.answer ? CLR.good : CLR.warn, marginBottom:4 }}>
+              {selected === kq.answer ? "答對了" : dontKnow ? "沒關係，現在知道了" : "差一點"}
+            </p>
+            <p style={{ fontSize:14, color:CLR.text, lineHeight:1.8 }}>{kq.explain}</p>
+          </div>
+        )}
+        <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
+          <button onClick={onBack} style={ghostBtn}>{pos === 0 ? "回封面" : "上一題"}</button>
+          {isKnow && !revealed
+            ? <button onClick={() => pending !== null && onAnswer(pending)} disabled={pending === null} style={primaryBtn(pending !== null)}>確定答案</button>
+            : <button onClick={onNext} disabled={!canNext} style={primaryBtn(canNext)}>{isLast ? "看結果" : "下一題"}</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 揭曉：先看三條光譜落點，再亮出類型；約 3 秒，可直接點按鈕跳過
+function Reveal({ result, href }) {
+  const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  useEffect(() => {
+    const t = setTimeout(() => { window.location.hash = href; }, reduce ? 1800 : 5200);
+    return () => clearTimeout(t);
+  }, []);
+  const name = result.typeName, tc = TYPE_CLR[name];
+  const d = (sec) => ({ animationDelay:`${sec}s` });
+  return (
+    <div style={{ minHeight:"100vh", background:`radial-gradient(120% 70% at 50% 28%, ${tc.bg} 0%, ${CLR.bg} 70%)`, display:"flex", alignItems:"center" }}>
+      <div style={{ ...wrap, width:"100%", maxWidth:520, paddingTop:32, paddingBottom:40, textAlign:"center" }}>
+        <p className="rv" style={{ ...d(0), fontSize:13, fontWeight:700, color:CLR.sub, letterSpacing:2, marginBottom:14 }}>正在對照你的答案</p>
+        <div className="rv" style={{ ...cardS, ...d(0.1), display:"flex", flexDirection:"column", gap:16, textAlign:"left" }}>
+          {["u", "r", "m"].map((k, i) => {
+            const dim = Q.DIMS[k], v = result.spectrum[k];
+            return (
+              <div key={k}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:CLR.sub, marginBottom:6, gap:8 }}>
+                  <span>{dim.low}</span>
+                  <span style={{ fontWeight:700, color:CLR.text, display:"inline-flex", alignItems:"center", gap:5 }}><Icon name={k} size={14} color={tc.m} />{dim.name}</span>
+                  <span>{dim.high}</span>
+                </div>
+                <div style={{ position:"relative", height:8, borderRadius:4, background:`linear-gradient(90deg, ${CLR.progressBg}, ${tc.m}55)` }}>
+                  <div className="rv-dot" style={{ ...d(0.35 + i * 0.4), position:"absolute", left:`${v}%`, top:-5, transform:"translateX(-50%)",
+                    width:18, height:18, borderRadius:9, background:tc.m, border:"3px solid #fff", boxShadow:"0 1px 4px rgba(0,0,0,0.25)" }} />
+                </div>
+                <p className="rv" style={{ ...d(0.9 + i * 0.4), fontSize:12, fontWeight:700, color:tc.m, marginTop:6, textAlign:v < 44 ? "left" : v > 56 ? "right" : "center" }}>{result.labels[k]}</p>
+              </div>
+            );
+          })}
+        </div>
+        <p className="rv" style={{ ...d(1.9), fontSize:14, color:CLR.sub, margin:"26px 0 10px" }}>你最接近</p>
+        <div style={{ position:"relative", width:140, height:140, margin:"0 auto" }}>
+          <span className="rv-glow" aria-hidden="true" style={{ ...d(2.05), position:"absolute", inset:0, borderRadius:"50%", background:`radial-gradient(circle, ${tc.m}55 0%, transparent 70%)` }} />
+          <div className="rv-sigil" style={{ ...d(2.0), position:"relative", display:"flex", justifyContent:"center", filter:`drop-shadow(0 10px 22px ${tc.m}40)` }}><Sigil name={name} size={140} spin /></div>
+        </div>
+        <h1 className="rv-name" style={{ ...d(2.5), fontSize:40, fontWeight:800, color:tc.m, letterSpacing:4, marginTop:14 }}>{name}</h1>
+        <p className="rv" style={{ ...d(2.7), fontSize:13, fontWeight:600, color:tc.m, marginTop:4 }}>{Q.typeTags(name).join("・")}</p>
+        <p className="rv" style={{ ...d(3.0), fontSize:16, color:CLR.text, marginTop:6, lineHeight:1.7 }}>{Q.TYPES[name].tag}</p>
+        <a className="rv" href={href} style={{ ...d(3.4), ...primaryBtn(), display:"inline-flex", alignItems:"center", gap:8, marginTop:24, textDecoration:"none" }}>
+          看我的完整結果<Icon name="chevron" size={16} color="#fff" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const fresh = () => ({ scale:Array(Q.SCALE_QS.length).fill(null), know:Array(Q.KNOW_QS.length).fill(null), safe:Array(Q.SAFE_QS.length).fill(null), pos:Array(Q.POS_QS.length).fill(null), behav:Array(Q.BEHAV_QS.length).fill(null) });
+  const [saved, setSaved] = useState(readProgress);
+  const [pos, setPos] = useState(0);
+  const [answers, setAnswers] = useState(fresh);
+  const [orders, setOrders] = useState(() => saved ? saved.orders : Q.SCALE_QS.map(q => shuffled(q.opts.length)));
+  const [reveal, setReveal] = useState(null);
+  const [started, setStarted] = useState(false);
+  const advancing = useRef(false);
+  const timer = useRef(null);
+
+  // 每答一題就存一次；看結果時清掉
+  useEffect(() => { if (started && !reveal) writeProgress({ pos, answers, orders }); }, [started, pos, answers, orders, reveal]);
+  const startFresh = () => {
+    clearProgress(); setSaved(null);
+    setAnswers(fresh()); setPos(0); setOrders(Q.SCALE_QS.map(q => shuffled(q.opts.length)));
+    setStarted(true); window.scrollTo({ top:0 });
+  };
+  const resumeSaved = () => {
+    setAnswers(saved.answers); setOrders(saved.orders); setPos(Math.min(saved.pos, STEPS.length - 1));
+    setStarted(true); window.scrollTo({ top:0 });
+  };
+
+  const step = STEPS[pos];
+  const doneCount = STEPS.slice(0, pos).filter(s => s.k !== "chapter").length;
+
+  const finish = (a) => {
+    const code = encode(a);
+    if (!code) return;
+    window.scrollTo({ top:0 });
+    clearProgress();
+    setReveal({ result:Q.calcResult(a), href:LINK.result(code) });
+  };
+  // 前進／後退時跳過依作答不需要回答的題目（例如沒投資過就不問年資）
+  const next = (a = answers) => {
+    window.scrollTo({ top:0 });
+    let p = pos + 1;
+    while (p < STEPS.length && skipStep(STEPS[p], a)) p++;
+    if (p < STEPS.length) setPos(p); else finish(a);
+  };
+  const back = () => {
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; advancing.current = false; }
+    if (pos === 0) { setStarted(false); window.scrollTo({ top:0 }); return; }
+    let p = pos - 1;
+    while (p > 0 && skipStep(STEPS[p], answers)) p--;
+    if (p >= 0) { setPos(p); window.scrollTo({ top:0 }); }
+  };
+
+  const answer = (o) => {
+    const a = { ...answers, scale:[...answers.scale], know:[...answers.know], safe:[...answers.safe], pos:[...answers.pos], behav:[...answers.behav] };
+    if (step.k === "scale") a.scale[step.i] = o;
+    if (step.k === "know") { if (a.know[step.i] !== null) return; a.know[step.i] = o; }
+    if (step.k === "safe") a.safe[step.i] = o;
+    const mq = step.k === "pos" ? Q.POS_QS[step.i] : step.k === "behav" ? Q.BEHAV_QS[step.i] : null;
+    if (step.k === "behav") a.behav[step.i] = mq.multi ? toggleMulti(mq, a.behav[step.i], o) : o;
+    if (step.k === "pos") {
+      a.pos[step.i] = mq.multi ? toggleMulti(mq, a.pos[step.i], o) : o;
+      Q.POS_QS.forEach((q, j) => { if (isSkipped(q, a.pos)) a.pos[j] = null; });
+      Q.BEHAV_QS.forEach((q, j) => { if (isSkipped(q, a.pos)) a.behav[j] = null; });
+    }
+    setAnswers(a);
+    // 小挑戰要看解說，不自動前進；其他題選完自動前進（advancing 防止連點跳題）
+    if (step.k !== "know" && !(mq && mq.multi) && !advancing.current) {
+      advancing.current = true;
+      timer.current = setTimeout(() => { timer.current = null; advancing.current = false; next(a); }, 260);
+    }
+  };
+
+  if (reveal) return <div style={{ fontFamily:FONT }}><Reveal result={reveal.result} href={reveal.href} /></div>;
+  if (!started) {
+    const resume = saved && { done:STEPS.slice(0, saved.pos).filter(s => s.k !== "chapter").length + 1 };
+    return <div style={{ fontFamily:FONT }}><CoverScreen onStart={startFresh} resume={resume} onResume={resumeSaved} /></div>;
+  }
+  return (
+    <div style={{ fontFamily:FONT, background:CLR.bg, minHeight:"100vh" }}>
+      {step.k === "chapter"
+        ? <ChapterScreen chapter={step.c} onNext={() => next()} onBack={back} doneCount={doneCount} />
+        : <QuestionScreen step={step} pos={pos} answers={answers} orders={orders} onAnswer={answer} onNext={() => next()} onBack={back} doneCount={doneCount} />}
+    </div>
+  );
+}
+
+  return App;
+})();
+
+// ── 結果畫面（簡版：同一套計分，只顯示結論與短句） ──
+const ResultApp = (() => {
+// 簡版結果頁：同一套計分，只顯示結論與短句，一頁看完
+const { useState, useEffect } = React;
+const Q = window.QUIZ;
+const { FONT, CLR, TYPE_CLR, ROUTE_CLR, encode, decode, sampleAnswers, sampleProfile, LINK } = window.QUIZ_SHARED;
+
+// 每型三句：強項、要小心、試試看（由完整版報告濃縮）
+const LITE = {
+  開拓者:{ good:"大跌時不慌，敢照計畫出手", watch:"看錯時容易拖著不走", try:"進場前先寫下：虧多少就出場" },
+  策略家:{ good:"先分好能冒險的錢才出手", watch:"獲利太早落袋，錯過大段行情", try:"想賣時先賣一半，另一半設條件再走" },
+  追浪人:{ good:"很早就注意到市場機會", watch:"分不清是自己判斷還是聽來的", try:"買之前先問：跌 15% 我會怎麼做？" },
+  觀察家:{ good:"不怕起伏，也守得住本金", watch:"只知道別人買什麼，不知道何時該出場", try:"跟著買之前，先寫下自己的出場條件" },
+  深耕者:{ good:"選好就能長期持有", watch:"看錯時容易一直等下去", try:"每筆先寫下：什麼情況代表我錯了" },
+  磐石:{ good:"不碰看不懂的東西，避開大虧", watch:"太保守，錢慢慢被物價吃掉", try:"找出十年用不到、卻放在定存的錢" },
+  取經人:{ good:"能長期照同一套方法做", watch:"參考的觀點容易只有同一派", try:"每年認真讀一次反方的看法" },
+  守望者:{ good:"不衝動、不重押、不借錢", watch:"總覺得自己還沒準備好", try:"定一個小金額，跌了也照扣一年" },
+};
+// 作答情境：同一型的人，狀況不同時換掉會互相矛盾的句子
+function ctxOf(r) {
+  const has = (k) => r.risks.includes(k);
+  return {
+    invested:r.plan.invested, exited:r.practices.includes("exited"), novice:!r.plan.invested && !r.practices.includes("exited"),
+    unsafe:r.flags.includes("fund") || r.flags.includes("need"), debt:r.flags.includes("debt"),
+    panic:has("panic"), follow:has("follow"), lever:has("lever"), concentrate:has("concentrate"), retire:has("retire"),
+    delegated:r.practices.includes("delegated") || has("advisor"), trader:r.practices.includes("trader"),
+    passive:r.practices.includes("passive"), picker:r.practices.includes("picker"),
+    crypto:r.practices.includes("crypto"), family:r.practices.includes("family"), employee:r.practices.includes("employee"),
+    holdsWinners:(r.scaleS.m2 || 0) >= 3 && !r.risks.includes("concentrate") && ![0, 2].includes(r.safeAnswer) && r.fundAnswer === 3 && r.life !== "uni" && r.life !== "hs",
+    holdsNeutral:(r.scaleS.m2 || 0) >= 3 && !r.risks.includes("concentrate"),
+    concentrate2:r.risks.includes("concentrate"), holdsM2:(r.scaleS.m2 || 0) >= 3, shakyFollower:r.risks.includes("panic") || r.risks.includes("follow") || r.practices.includes("trader"),
+    fundLow:r.fundAnswer === 0,
+    hs:r.life === "hs", student:r.life === "hs" || r.life === "uni", pocket:r.safeAnswer === 5,
+    goalYears:r.safeAnswer === 2 ? "mid" : r.safeAnswer === 4 ? "long" : null,
+  };
+}
+const r_scaleOK = (c) => c.holdsM2;
+function liteFor(typeName, c) {
+  const l = { ...LITE[typeName] };
+  const shaky = c.panic || c.follow || c.lever || c.concentrate;
+  if (typeName === "守望者") {
+    if (c.exited && !c.invested) { l.good = "被市場教過一課，現在懂得先停下來想"; l.watch = "怕再虧，錢一直放著沒動"; l.try = "先把上次虧損的原因寫下來，再決定要不要回去"; return l; }
+    if (shaky) l.good = "願意借鑒有經驗的人，不自以為是";
+    else if (c.novice) l.good = "不急著出手，先想清楚再動";
+    if (c.panic || c.follow) l.watch = "身邊的人一緊張，你也容易跟著動";
+    else if (c.delegated) l.watch = "容易把判斷整個交給別人";
+    else if (c.passive) l.watch = "市場一吵，心裡就跟著不安";
+    if (c.retire) l.try = "要用的錢先放安全的地方，其餘再慢慢配置";
+    else if (c.delegated) l.try = "請理專列出你持有的商品和每年費用";
+    else if (c.passive) l.try = c.unsafe ? "定期定額照扣，加碼先等預備金存好" : "每年檢查一次：手上有什麼、費用多少";
+    else if (c.unsafe) l.try = "預備金存好後，定一個小金額，跌了也照扣一年";
+  }
+  if (typeName === "開拓者" && c.novice) { l.good = "市場越亂，越看得見機會"; l.watch = "等你真的開始，看錯時可能捨不得走"; l.try = "第一筆買進前，先寫好出場條件"; return l; }
+  if (typeName === "開拓者" && !c.trader) {
+    if (c.passive) {
+      l.good = "大跌時不慌，還敢照計畫多買";
+      l.watch = c.picker ? "自己挑的那幾檔，看錯時容易拖著不走" : c.employee ? "自家公司的股票，最容易讓你捨不得調整" : "額外加碼的那幾筆，看錯時容易拖著不走";
+      l.try = c.picker ? "只替自己挑的個股寫下：什麼情況代表我錯了" : c.employee ? "替員工持股訂一個比重上限" : "只替額外加碼的部分寫下出場條件";
+    }
+    else if (c.picker) { l.good = "大跌時不慌，敢照自己的研究出手"; l.watch = "越相信自己的研究，越難承認看錯"; l.try = "替每一檔寫下：什麼情況代表我看錯了"; }
+  }
+  if (typeName === "策略家" && c.concentrate2 && (r_scaleOK(c))) { l.watch = "越熟悉的持股，越容易低估它的風險"; l.try = "用看陌生股票的眼光，重新看一次你最大的那一檔"; }
+  if (typeName === "策略家" && c.holdsNeutral && !c.holdsWinners) { l.watch = "格子分得清楚，但比例還沒寫成規則"; l.try = "把每一格該放多少寫下來，每年檢查一次"; }
+  if (typeName === "策略家" && c.holdsWinners) { l.watch = "「不能動」的那一格，有時放得比需要的多"; l.try = "每年檢查一次：「不能動」的錢，是不是真的不能動"; }
+  if (typeName === "取經人" && !c.passive && c.shakyFollower) { l.good = "願意參考走過的人"; l.watch = "參考的常是當下最熱的聲音，不是長期的方法"; l.try = "挑一套長期方法寫下來，跌的時候也照著做"; }
+  if (typeName === "守望者" && c.follow && !c.panic) l.watch = "身邊的人都在買的，你也容易跟著買";
+  if (typeName === "守望者" && c.hs && !c.passive && !c.retire) l.try = "每月從零用錢固定存一筆，再決定投資多少";
+  if (typeName === "磐石") l.try = "找出十年用不到、卻一直放在存款的錢";
+  if (typeName === "磐石" && (c.lever || c.concentrate)) l.good = "只碰自己看得懂的東西";
+  if (typeName === "開拓者" && c.panic) l.good = "市場亂的時候，還看得見機會";
+  if (typeName === "取經人" && c.panic) l.good = "相信被驗證過的方法";
+  if (typeName === "深耕者" && c.panic) l.good = "願意花時間把公司弄懂";
+  if (typeName === "觀察家" && c.unsafe) l.try = "預備金存好後，先寫下出場條件再小額跟進";
+  return l;
+}
+// 你可能有過這種時刻：每型一句只有這型會有的畫面
+const MOMENT = {
+  開拓者:"那年大盤漲了 20%，你只賺 3%，你一點都不覺得自己有賺。",
+  策略家:"賣掉之後它又漲了一大段，你跟自己說：賺到就好。",
+  追浪人:"看完幾支影片、幾篇討論，就覺得自己研究過了。",
+  觀察家:"你跟著信得過的人買進，股價跌了一成，你第一個念頭是：他現在怎麼看？",
+  深耕者:"虧損的時候，你想的是：市場遲早會證明我是對的。",
+  磐石:"錢放得很安心，只是每年都悄悄少了一點購買力。",
+  取經人:"有人問你為什麼這樣投資，你說：「很多人都這樣做，長期是有效的。」",
+  守望者:"開戶頁面打開過好幾次，最後都關掉了。",
+};
+// 依實際經驗挑一句，避免套到沒有這個經驗的人身上
+const MOMENT_NOVICE = {
+  開拓者:"哪天你真的買了，遇到大盤一天跌 3%，你想的可能是：是不是該多買一點？",
+  策略家:"哪天你真的買了，還沒出手，你大概已經先算好最多能虧多少。",
+  追浪人:"哪天你真的要買，你大概會先看大家最近都在討論哪一檔。",
+  觀察家:"哪天你開始投資，大概會先看看信得過的人怎麼做，再拿一小筆輸得起的錢跟著試。",
+  深耕者:"哪天你真的買了，跌了兩成，你的第一個反應大概是再去研究一遍。",
+  磐石:"哪天你真的要買，你會先挑自己看得懂、不太會大起大落的東西。",
+  取經人:"哪天你開始投資，你大概會先找一套很多人用過的方法照著做。",
+};
+function momentFor(typeName, c) {
+  if (c.novice && MOMENT_NOVICE[typeName]) return MOMENT_NOVICE[typeName];
+  if (typeName === "策略家" && c.concentrate2 && c.holdsM2) return c.employee ? "公司又配發了一批股票，你沒多想就收進帳戶，它早就是你最大的一塊。" : "你最大的那一檔，是你最熟悉、也最少重新檢查的那一檔。";
+  if (typeName === "策略家" && c.holdsWinners) return "帳戶裡一直留著一筆「不能動」的錢，其實它十年內都用不到。";
+  if (typeName === "策略家" && c.holdsNeutral) return "你心裡有一條線：這筆錢可以冒險，那筆不行。";
+  if (typeName === "取經人" && !c.passive && c.shakyFollower) return "群組裡有人說得很有把握，你就跟著買了；跌下來的那天，你第一個念頭是先賣再說。";
+  if (typeName === "守望者") {
+    if (c.exited && !c.invested) return "賣掉之後，有很長一段時間，你連看盤軟體都不想打開。";
+    if (c.panic) return "大家一起緊張的時候，你也比較容易跟著賣掉。";
+    if (c.follow) return "跌的那幾天，你會先去問家人或朋友：「現在該怎麼辦？」";
+    if (c.delegated) return "理專說這檔不錯，你就買了，但說不太出它每年收多少費用。";
+    if (c.passive) return "新聞說大跌的那天，你打開 App 看了三次，最後什麼都沒做。";
+    if (c.invested) return "朋友問你買了什麼，你說得出名字，卻說不太出為什麼買。";
+  }
+  if (typeName === "開拓者" && !c.trader) {
+    if (c.passive) return "大盤跌了兩成，你沒有停扣，反而多買了一些。";
+    if (c.picker) return "股價跌兩成、新聞一片看壞，你翻完財報，決定再買一點。";
+  }
+  return MOMENT[typeName];
+}
+// 結論句：用性格講理由，不用系統語言
+const TYPE_PHRASE = {
+  開拓者:"市場越亂、眼睛越亮", 策略家:"出手前先想好退路", 追浪人:"很早就聽見風聲", 觀察家:"跟著可靠的人、只拿輸得起的錢出手",
+  深耕者:"選好了就願意放很久", 磐石:"把本金放在第一位", 取經人:"能長期照著方法做", 守望者:"先求不出錯",
+};
+const ALERT = { fund:"預備金不足", need:"一年內要用錢", debt:"還款壓力重", retire:"退休金要保守安排", lever:"用了槓桿", concentrate:"單一持股過重", follow:"常跟著別人買", panic:"大跌時賣過", advisor:"理專商品的費用待確認", crypto:"加密貨幣要設上限" };
+const NOTE_LABEL = { lever:"先把槓桿控住", practice:"先用小錢練習", derisk:"先把風險降下來" };
+const noteKey = (r) => r.plan.practiceNote === "practice" && r.practices.includes("trader") && r.expStage !== "starter" ? "derisk" : r.plan.practiceNote;
+
+const wrap = { maxWidth:560, margin:"0 auto", padding:"0 20px" };
+const cardS = { background:CLR.card, borderRadius:14, padding:"18px 20px", boxShadow:"0 1px 8px rgba(0,0,0,0.05)" };
+const label = { fontSize:12, fontWeight:700, color:CLR.sub, letterSpacing:1, marginBottom:10 };
+const btn = { display:"inline-block", padding:"10px 18px", borderRadius:10, border:`1px solid ${CLR.border}`, background:CLR.card, color:CLR.sub, fontSize:14, textDecoration:"none" };
+
+function Icon({ name, size = 20, color = "currentColor", stroke = 2 }) {
+  const ic = window.QUIZ_ICONS[name];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink:0 }}>
+      {(ic.circles || []).map(([cx, cy, r], i) => <circle key={"c" + i} cx={cx} cy={cy} r={r} />)}
+      {ic.paths.map((d, i) => <path key={i} d={d} />)}
+    </svg>
+  );
+}
+
+// 類型符文徽章（圖形資料在 icons.js）
+const BITS_OF = Object.fromEntries(Object.entries(Q.TYPE_KEY).map(([k, v]) => [v, k]));
+function Sigil({ name, size = 64, spin = false, mono = null }) {
+  const c = mono ? { m:mono, bg:"transparent" } : TYPE_CLR[name], g = window.QUIZ_SIGIL(BITS_OF[name], name), id = "sg" + BITS_OF[name];
+  const round = g.frame === "circle";
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" aria-label={`${name}的符文`} role="img" style={{ flexShrink:0, display:"block", overflow:"visible" }}>
+      <defs>
+        <radialGradient id={id} cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stopColor="#fff" />
+          <stop offset="100%" stopColor={c.bg} />
+        </radialGradient>
+      </defs>
+      {round
+        ? <circle cx="50" cy="50" r="48" fill={mono ? "none" : `url(#${id})`} stroke={c.m} strokeOpacity="0.35" strokeWidth="1.5" />
+        : <path d={g.framePath} fill={mono ? "none" : `url(#${id})`} stroke={c.m} strokeOpacity="0.4" strokeWidth="1.8" strokeLinejoin="round" />}
+      {round && <path d={g.ticks} stroke={c.m} strokeOpacity="0.55" strokeWidth="1.6" strokeLinecap="round" />}
+      <g className={spin && round ? "sigil-spin" : undefined} style={{ transformOrigin:"50px 50px" }}>
+        {round
+          ? <circle cx="50" cy="50" r="36" fill="none" stroke={c.m} strokeOpacity="0.3" strokeWidth="1" strokeDasharray="2 5" />
+          : <path d={g.framePath} transform="translate(50 50) scale(0.8) translate(-50 -50)" fill="none" stroke={c.m} strokeOpacity="0.3" strokeWidth="1.2" strokeDasharray="2 5" />}
+      </g>
+      <g fill="none" stroke={c.m} strokeOpacity="0.7" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        {g.marks.map((d, i) => <path key={"m" + i} d={d} />)}
+      </g>
+      {g.markDots.map(([cx, cy, r], i) => <circle key={"md" + i} cx={cx} cy={cy} r={r} fill={c.m} fillOpacity="0.7" />)}
+      <g fill="none" stroke={c.m} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+        {g.rune.filter(e => e.t === "path").map((e, i) => <path key={i} d={e.d} />)}
+      </g>
+      {g.rune.filter(e => e.t === "dot").map((e, i) => <circle key={"d" + i} cx={e.cx} cy={e.cy} r={e.r} fill={c.m} />)}
+    </svg>
+  );
+}
+
+function readHash() {
+  const p = new URLSearchParams(window.location.hash.slice(1));
+  return { code:p.get("a"), sample:p.get("sample") === "1" };
+}
+
+function Bar({ d, result, color }) {
+  const dim = Q.DIMS[d], v = result.spectrum[d];
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6, gap:8 }}>
+        <span style={{ color:CLR.sub }}>{dim.low}</span>
+        <span style={{ fontWeight:700, color:CLR.text, display:"inline-flex", alignItems:"center", gap:5 }}><Icon name={d} size={15} color={color} />{dim.name}</span>
+        <span style={{ color:CLR.sub }}>{dim.high}</span>
+      </div>
+      <div style={{ position:"relative", height:8, borderRadius:4, background:`linear-gradient(90deg, ${CLR.progressBg}, ${color}55)` }}>
+        <div style={{ position:"absolute", left:"44%", width:"12%", top:0, bottom:0, background:"rgba(255,255,255,0.6)" }} />
+        <div className="bar-dot" style={{ position:"absolute", left:`${v}%`, top:-5, transform:"translateX(-50%)", width:18, height:18, borderRadius:9, background:color, border:"3px solid #fff", boxShadow:"0 1px 4px rgba(0,0,0,0.25)" }} />
+      </div>
+    </div>
+  );
+}
+
+// ── 學習地圖（簡版）：階段進度條＋可展開的步驟卡，預設只看標題 ──
+const PRE_ICON = { family:"lock", crypto:"alert", employee:"target", safety:"shield", risk:"alert", delegate:"folder", rebuild:"rewind", follow:"checklist", basics:"book" };
+const STAGE_ORDER = ["starter", "growing", "seasoned"];
+// 每型一句話，給教練的話用
+const MOTTO = {
+  開拓者:"規則說出場，就先出場。", 策略家:"留一半，讓獲利多跑一段。", 追浪人:"熱門消息，等兩天再決定。", 觀察家:"跟著買之前，先想好自己的出場。",
+  深耕者:"先寫好看錯的條件，再談耐心。", 磐石:"保守的錢，也要跑贏物價。", 取經人:"每一筆扣款，都對應一個目標。", 守望者:"小金額開始，跌了也照扣。",
+};
+const firstSentence = (t) => (t.split("。")[0] || t) + "。";
+function liteVerdict(result) {
+  const { plan, typeName } = result;
+  const brief = plan.styleBrief.replace(/^直接說結論：/, "");
+  // 主動交易還沒準備好時，「還不適合」優先於做法缺口
+  if (noteKey(result) === "derisk") {
+    const why = [result.flags.includes("fund") && "預備金", result.flags.includes("need") && "一年內要用的錢", result.flags.includes("debt") && "高利率的債務",
+      result.risks.includes("lever") && "槓桿", result.risks.includes("concentrate") && "單一持股的比重"].filter(Boolean);
+    return `你的性格和主動交易合得來，但先把${why.join("、")}處理好，再談放大交易。做法在學習地圖最上面。`;
+  }
+  if (plan.practiceNote === "practice") return brief.replace("原因和做法寫在學習地圖最上面。", "原因和做法在學習地圖最上面。").trim();
+  if (plan.fit && !plan.fit.fit) return plan.fit.brief;
+  if (brief.includes("理由寫在學習地圖最上面")) return `像你這樣${TYPE_PHRASE[typeName]}的人，比較適合「${Q.ROUTES[plan.routeKey].name}」：${Q.ROUTES[plan.routeKey].desc}`;
+  return brief.replace("原因和做法寫在學習地圖最上面。", "").trim();
+}
+
+function SectionHead({ icon, title, color }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+      <span style={{ width:34, height:34, borderRadius:10, background:`${color}14`, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icon name={icon} size={18} color={color} /></span>
+      <p style={{ fontSize:17, fontWeight:800, color:CLR.text }}>{title}</p>
+    </div>
+  );
+}
+
+// 步驟卡：一次只展開一張；收合時看標題＋一句話，展開後改看完整說明與做法
+function StepCard({ n, icon, color, tone, title, short, detail, how, locked, lockText, first, open, onToggle }) {
+  const hasMore = !!(detail || how);
+  return (
+    <div style={{ display:"flex", gap:12 }}>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <span style={{ width:30, height:30, borderRadius:15, flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800,
+          background:first ? color : CLR.card, color:first ? "#fff" : color, border:`2px solid ${color}` }}>
+          {icon ? <Icon name={icon} size={15} color={first ? "#fff" : color} /> : n}
+        </span>
+        <span style={{ flex:1, width:2, background:CLR.border, marginTop:4 }} />
+      </div>
+      <div style={{ flex:1, minWidth:0, marginBottom:16, borderRadius:14, overflow:"hidden",
+        background:open ? CLR.card : (tone || CLR.bg), border:`${open ? 2 : 1}px solid ${open ? color : "transparent"}`,
+        boxShadow:open ? `0 6px 18px ${color}22` : "none", transition:"box-shadow .2s, border-color .2s" }}>
+        <button onClick={() => hasMore && onToggle()} aria-expanded={open}
+          style={{ width:"100%", display:"flex", alignItems:"flex-start", gap:8, background:"none", border:"none", padding:"12px 14px", textAlign:"left", cursor:hasMore ? "pointer" : "default" }}>
+          <span style={{ flex:1, minWidth:0 }}>
+            <span style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:6, marginBottom:first || locked ? 4 : 0 }}>
+              {first && <span style={{ fontSize:11, fontWeight:700, color:"#fff", background:color, borderRadius:6, padding:"1px 7px" }}>先做這個</span>}
+              {locked && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, fontWeight:700, color:CLR.warn, background:CLR.warnBg, borderRadius:6, padding:"1px 7px" }}><Icon name="lock" size={11} color={CLR.warn} />需實際下單</span>}
+            </span>
+            <span style={{ display:"block", fontSize:15, fontWeight:800, color:CLR.text, lineHeight:1.5 }}>{title}</span>
+            {!open && short && <span style={{ display:"block", fontSize:13, color:CLR.sub, lineHeight:1.6, marginTop:2 }}>{short}</span>}
+          </span>
+          {hasMore && <span style={{ display:"inline-flex", marginTop:2, transform:open ? "rotate(90deg)" : "none", transition:"transform .2s" }}><Icon name="chevron" size={16} color={open ? color : CLR.faint} /></span>}
+        </button>
+        {open && (
+          <div className="fade-in" style={{ padding:"0 14px 14px", display:"flex", flexDirection:"column", gap:12 }}>
+            {detail && <p style={{ fontSize:14, color:CLR.text, lineHeight:1.85 }}>{detail}</p>}
+            {how && (
+              <div style={{ background:`${color}0D`, borderRadius:10, padding:"10px 12px" }}>
+                <p style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, fontWeight:800, color, marginBottom:4 }}><Icon name="play" size={12} color={color} />怎麼開始</p>
+                <p style={{ fontSize:14, color:CLR.text, lineHeight:1.8 }}>{how}</p>
+              </div>
+            )}
+            {locked && <p style={{ fontSize:12, color:CLR.warn, lineHeight:1.6 }}>{lockText || "這一步需要實際下單，先用模擬帳戶或很小的金額練習。"}</p>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MapSection({ result, locked }) {
+  const { plan, stage } = result;
+  const [openId, setOpenId] = useState(null);
+  const toggle = (id) => setOpenId(openId === id ? null : id);
+  const route = Q.ROUTES[plan.routeKey], rc = ROUTE_CLR[plan.routeKey];
+  const misfit = plan.fit && !plan.fit.fit;
+  const verdict = liteVerdict(result);
+  const at = STAGE_ORDER.indexOf(stage);
+  return (
+    <div style={{ ...cardS, borderTop:`4px solid ${rc}` }}>
+      <SectionHead icon="map" title="學習地圖" color={rc} />
+
+      <div style={{ display:"flex", alignItems:"baseline", gap:8, flexWrap:"wrap" }}>
+        <p style={{ fontSize:22, fontWeight:800, color:rc }}>{route.name}</p>
+        {plan.practiceNote && <span style={{ fontSize:12, fontWeight:700, color:CLR.warn, background:CLR.warnBg, borderRadius:20, padding:"2px 10px" }}>{NOTE_LABEL[noteKey(result)]}</span>}
+      </div>
+      <p style={{ fontSize:13, color:CLR.sub, marginTop:2 }}>{route.desc}</p>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:6, margin:"16px 0 6px" }}>
+        {STAGE_ORDER.map((k, i) => (
+          <div key={k}>
+            <div style={{ height:6, borderRadius:3, background:i <= at ? rc : CLR.progressBg, opacity:i < at ? 0.45 : 1 }} />
+            <p style={{ fontSize:12, marginTop:6, textAlign:"center", fontWeight:i === at ? 800 : 500, color:i === at ? rc : CLR.faint }}>{Q.STAGES[k]}{i === at ? "・你在這" : ""}</p>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:"flex", gap:10, alignItems:"flex-start", background:misfit ? CLR.warnBg : `${rc}0F`, borderRadius:12, padding:"10px 12px", margin:"12px 0 18px" }}>
+        <Icon name="target" size={18} color={misfit ? CLR.warn : rc} />
+        <p style={{ fontSize:14, color:CLR.text, lineHeight:1.7 }}>{verdict}</p>
+      </div>
+
+      {plan.pre.length > 0 && <p style={{ ...label, marginBottom:10 }}>先準備</p>}
+      {plan.pre.map((p, i) => (
+        <StepCard key={"p" + i} icon={PRE_ICON[p.kind]} color={CLR.warn} tone={CLR.warnBg} first={i === 0}
+          title={p.t} short={p.brief} detail={p.d + (p.note ? " " + p.note : "")}
+          open={openId === "p" + i} onToggle={() => toggle("p" + i)} />
+      ))}
+      {/* 送出聯絡資料前：從「○○階段要學」到底部模糊，inert 讓滑鼠、鍵盤、讀屏都碰不到；「先準備」不在這一層 */}
+      <div style={{ position:"relative", overflow:locked ? "hidden" : undefined }}>
+        <div inert={locked ? "" : undefined} aria-hidden={locked ? "true" : undefined}
+          style={locked ? { filter:"blur(6px)", pointerEvents:"none", userSelect:"none", WebkitUserSelect:"none" } : undefined}>
+          <p style={{ ...label, marginBottom:10, marginTop:plan.pre.length ? 8 : 0 }}>{Q.STAGES[stage]}階段要學</p>
+          {plan.modules.map((m, i) => (
+            <StepCard key={"m" + i} n={i + 1} color={rc} first={!plan.pre.length && i === 0}
+              title={m.t} short={firstSentence(m.d)} detail={m.d} how={m.how} locked={m.locked}
+              lockText={result.practices.includes("trader") && result.expStage !== "starter" ? "先處理完上面的「先準備」，再用固定的小部位驗證這一步，確認自己有照規則做，才放大。" : null}
+              open={openId === "m" + i} onToggle={() => toggle("m" + i)} />
+          ))}
+
+          <div style={{ marginTop:6 }}>
+            <p style={{ fontSize:12, color:CLR.faint, marginBottom:6 }}>{plan.extras.label}</p>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {plan.extras.items.map(e => <span key={e} style={{ fontSize:12, color:CLR.sub, border:`1px dashed ${CLR.border}`, borderRadius:20, padding:"3px 10px" }}>{e}</span>)}
+            </div>
+          </div>
+          <p style={{ fontSize:12, color:CLR.faint, marginTop:12 }}>點步驟看做法，一次展開一個</p>
+        </div>
+        {locked && (
+          <div id="map-gate" style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+            <p style={{ display:"inline-flex", alignItems:"center", gap:8, background:CLR.card, borderRadius:12, padding:"12px 18px", boxShadow:"0 6px 20px rgba(0,0,0,0.12)",
+              fontSize:15, fontWeight:700, color:CLR.text, lineHeight:1.6, textAlign:"center" }}>
+              <Icon name="lock" size={18} color={rc} />送出聯絡方式後取得專屬學習指南
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── 牛皮紙信紙：燒開動畫（每次打開分頁重播）＋封蠟 ──
+const EMBERS = Array.from({ length:16 }, (_, i) => ({
+  left:`${6 + ((i * 37) % 88)}%`, delay:`${(i * 0.13) % 1.6}s`, dx:`${((i * 53) % 90) - 45}px`, size:3 + (i % 3) * 2,
+}));
+
+function Parchment({ children }) {
+  return (
+    <div className="parchment">
+      <svg width="0" height="0" style={{ position:"absolute" }} aria-hidden="true">
+        <filter id="burnEdge" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="11" />
+          <feDisplacementMap in="SourceGraphic" scale="46" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
+      <div className="pc-body pc-reveal">{children}</div>
+      <div className="burn-char" aria-hidden="true" />
+      <div className="burn-ember" aria-hidden="true" />
+      <div className="embers" aria-hidden="true">
+        {EMBERS.map((e, i) => <span key={i} className="ember" style={{ left:e.left, width:e.size, height:e.size, animationDelay:e.delay, "--dx":e.dx }} />)}
+      </div>
+    </div>
+  );
+}
+
+// 分隔花飾：細線中間一顆菱形
+function Flourish() {
+  return (
+    <svg viewBox="0 0 240 14" width="100%" height="14" aria-hidden="true" style={{ display:"block", maxWidth:260, margin:"10px auto" }}>
+      <path d="M8 7 H104 M136 7 H232" stroke="#7A4A1E" strokeOpacity="0.55" strokeWidth="1" />
+      <path d="M120 1 L127 7 L120 13 L113 7 Z" fill="none" stroke="#7A4A1E" strokeWidth="1.2" />
+      <circle cx="120" cy="7" r="1.6" fill="#7A4A1E" />
+      <circle cx="106" cy="7" r="1.2" fill="#7A4A1E" fillOpacity="0.6" />
+      <circle cx="134" cy="7" r="1.2" fill="#7A4A1E" fillOpacity="0.6" />
+    </svg>
+  );
+}
+
+// ── 教練的信（簡版）：像一位長輩寫給你的信，歡迎、陪伴、指路 ──
+// 每型一段：先肯定，再溫和點出要留心的地方；invested／shaky／unsafe 是依作答換掉會矛盾的版本
+const TYPE_WARM = {
+  開拓者:{ novice:"你還沒真的買過，但從答案看，你是那種市場越亂、越想出手的人：別人恐慌的時候，你想的是價格是不是變便宜了。這份直覺很有用，只是等你真的開始，最容易吃虧的不是看錯，而是看錯之後跟自己說「再等一下」。所以第一筆買進之前，就先寫好出場的條件。",
+    base:"大盤一天跌 3%，身邊的人急著停損，你打開的卻是下單畫面。別人恐慌的時候價格常常最便宜，這一點你看得很準。只是你最大的虧損，多半不是來自看錯，而是看錯之後跟自己說「再等一下」。下次又聽見自己這樣說，那通常就是該出場的聲音。",
+    passive:"大盤跌兩成、身邊的人急著停扣，你不但沒停，還多買了一些。這份沉著，你是真的做到過。你要留意的不在整體，而在另外加碼、或自己挑的那一小塊：越敢逆勢加碼的人，越容易把「看錯」當成「還沒漲」。大盤的部分照你原本的紀律走，出場的規則只留給個股。",
+    picker:"股價跌兩成、新聞一片看壞，你翻完財報，決定再買一點。你相信自己的研究，這份獨立讓你很少被市場情緒帶走。相對地，看錯的時候，身邊也比較少人能及時提醒你；越相信自己的人，越需要一條事先寫好的「我錯了」的條件。",
+    panic:"別人恐慌的時候價格常常最便宜，這一點你看得懂。不過從你的答案看，真正大跌的那幾天，你也有過撐不住的時候。這不矛盾，看得懂和撐得住是兩種能力；撐得住靠的不是膽量，而是在冷靜時就先寫好的規則。" },
+  策略家:{ novice:"你還沒真的出手，但從答案看，你會先把「不能動的錢」和「可以冒險的錢」分清楚，再算最壞會虧多少，這是很成熟的習慣。等你真的開始，要留意的反而在另一頭：保本的那一格放太多，錢會長得比你的判斷力慢。",
+    concentrated:"你的錢大概早就分成好幾格：這筆不能動、這筆可以拿來冒險。出手前你會先算最壞會虧多少，看對的時候也抱得住。你要留意的，是手上最大的那一塊：越熟悉的東西，越容易低估它的風險，值得用看陌生股票一樣嚴格的眼光，再看它一次。",
+    neutral:"你的錢大概早就分成好幾格：這筆不能動、這筆可以拿來冒險。出手前你會先算最壞會虧多少，看對的時候也抱得住，這份分寸很難得。接下來值得做的，是把這些格子寫下來：每一格放多少、什麼時候調整，讓它變成規則，而不是每次重新想一遍。",
+    holds:"你的錢大概早就分成好幾格：這筆不能動、這筆可以拿來冒險。出手前你會先算最壞會虧多少，所以很少被一次虧損打亂生活；看對的時候，你也抱得住。你要留意的在另一頭：「不能動」的那一格，有時放得比真正需要的多，十年內用不到的錢，其實可以多交給時間。",
+    base:"你的錢大概早就分成好幾格：這筆不能動、這筆可以拿來冒險。出手前你會先算最壞會虧多少，所以很少被一次虧損打亂生活。你的問題通常出在另一頭：賺了一成就想先落袋，後面那段大漲，常常跟你沒關係。你怕的其實不是少賺，而是賺到的又吐回去。" },
+  追浪人:{ novice:"你的 IG、Threads 或 YouTube 上，大概追了不少投資帳號，新題材出來時，你通常比身邊的人早知道。等你真的開始買，要記得：你知道的時候，往往也是幾萬人同時知道的時候。先分清楚「我研究過」和「我看過很多人這樣說」，再決定要不要出手。",
+    base:"你的 IG、Threads 或 YouTube 上，大概追了不少投資帳號，新題材出來時，你通常比身邊的人早知道。只是你知道的時候，往往也是幾萬人同時知道的時候。消息來得越快，越難分辨「我研究過」和「我看過很多人這樣說」，而這兩種買法，跌的時候的心情完全不一樣。" },
+  觀察家:{ base:"你大概有幾位很信任的前輩、老師或資料來源，他們買什麼、怎麼看，你都會認真參考，而且只拿輸得起的錢跟進，這份分寸很好。只是跟著進場容易，出場卻常常沒人告訴你。下一步要練的，是把別人的理由變成自己的：每次跟進前，用自己的話寫下買的理由和出場的條件。",
+    invested:"你已經在市場裡了，也很可能有幾位固定參考的人。你不怕起伏、也守得住本金，這是很好的基礎。接下來要練的，是讓每一筆都有自己的出場條件：就算參考的人沒說話，你也知道什麼時候該走。" },
+  深耕者:{ novice:"你喜歡把一件事弄懂再動手；等你真的買了，大概會先把公司的財報和對手都看過一輪。這份耐心在市場裡很少見，只是研究得越用心，越難承認自己看錯。先學會替每一筆寫下「發生什麼事就代表我錯了」，耐心才不會變成固執。",
+    base:"買一檔股票之前，你大概會先把它的財報、產業和對手都看過一輪；股價跌兩成，你的第一個反應是再翻一次財報，而不是按賣出。這讓你很少被短期的雜音洗出場。只是研究得越用心，越難承認自己看錯。對你來說，最難的從來不是等，而是承認這一次等錯了。" },
+  磐石:{ base:"你的錢放在哪裡、為什麼放那裡，你大概都說得出來；別人在聊當沖、聊加密貨幣，你多半只是聽聽。這讓你避開了很多一次就傷筋動骨的坑。只是那筆放在存款、十年內都用不到的錢，利息其實追不上物價。在你能安心的範圍裡，挑一小部分交給時間，讓它慢慢長大。",
+    invested:"身邊的人在聊當沖、聊加密貨幣的時候，你多半只是聽聽，只做自己看得懂的事。這讓你避開了很多一次就傷筋動骨的坑。你的錢已經有一部分在市場裡工作，接下來值得每年問自己一次：放在最保守位置的那一塊，是不是真的需要那麼保守。" },
+  取經人:{ shaky:"你想讓錢長大，也習慣借鑒前人走過的路，這本來是很好的組合。只是從你的答案看，你參考的常常是群組或社群裡當下最熱的聲音，而不是長期被驗證過的方法。你需要的不是更多消息，而是一套自己寫下來、跌的時候也照著做的簡單方法。",
+    notPassive:"你相信被驗證過的方法，找到一套有道理的做法，就願意長期照著做。這份穩定，是很多人投資幾年都練不起來的。你要補的是另一塊：這套方法，你是聽誰說有效的？它在什麼情況下會表現很差，值得在開始之前就先想過一遍。",
+    base:"你大概早就設好定期定額，扣款日一到就扣，新聞喊大跌的時候，你也沒去按停扣。這份穩定，是很多人投資幾年都練不起來的。你要補的是另一塊：這套方法，你是聽誰說有效的？它在什麼情況下會表現很差，值得你自己完整想過一遍，而不是等到那一天才第一次想。" },
+  守望者:{ base:"要把錢放進去之前，你大概會先問過家人朋友，或看了好幾支影片，最後還是覺得「再準備一下好了」。這讓你少踩了很多坑。只是你現在缺的，多半不是更多資訊，而是一筆每個月少了也不影響生活的第一筆扣款。",
+    unsafe:"要把錢放進去之前，你大概會先問過家人朋友，最後還是覺得「再準備一下好了」。這一次，你的直覺是對的：先把預備金存好，再從一筆每個月少了也不影響生活的小金額開始，就是最好的準備。",
+    invested:"你的錢已經在市場裡，但當初買什麼，多半是參考信任的人。這讓你少犯很多自以為是的錯。不需要變成專家，只要說得出三件事：手上有什麼、當初為什麼買、每年付了多少費用。",
+    exited:"你曾經在市場裡，後來帶著虧損離開。現在的你很小心，這份小心是用學費換來的，不需要丟掉。只是錢一直放著不動，也是一種虧法，只是虧得比較慢。回去的第一步，不是找下一個機會，而是先弄清楚上次是哪裡出了錯。",
+    panic:"你做決定前會先聽聽身邊的人，這本來是優點。只是從你的答案看，身邊的聲音有時也會把你帶著走，大家一起緊張的時候，你也跟著賣了。這封信想陪你做的，是在冷靜的時候，先寫好一條「什麼情況才賣」的規則。",
+    follow:"你做決定前會先聽聽身邊的人，這本來是優點。只是從你的答案看，你的買進常常是從別人的討論開始的。這沒有不對，差別只在按下買進之前，你有沒有自己查過一件事：推薦的人，自己手上有沒有這一檔？" },
+};
+function typeWarm(typeName, c) {
+  const w = TYPE_WARM[typeName];
+  if (w.exited && c.exited && !c.invested) return w.exited;
+  if (typeName === "開拓者" && !c.trader && !c.panic) {
+    if (c.passive) return w.passive;
+    if (c.picker) return w.picker;
+  }
+  if (w.novice && c.novice) return w.novice;
+  if (w.concentrated && c.concentrate2 && c.holdsM2) return w.concentrated;
+  if (w.holds && c.holdsWinners) return w.holds;
+  if (w.neutral && c.holdsNeutral) return w.neutral;
+  if (w.shaky && !c.passive && c.shakyFollower) return w.shaky;
+  if (w.notPassive && !c.passive) return w.notPassive;
+  if (w.panic && c.panic) return w.panic;
+  if (w.follow && c.follow) return w.follow;
+  if (w.unsafe && c.unsafe && !c.invested) return w.unsafe;
+  if (w.invested && c.invested) return w.invested;
+  return w.base;
+}
+function stageWarm(result, c) {
+  const st = result.expStage;
+  if (c.exited && !c.invested) return "你曾經在市場裡，後來選擇先離開。願意回來把事情重新想一遍，本身就需要勇氣。這次不用急，先把上次的教訓寫成規則，再決定要不要回去。";
+  if (st === "starter" && c.student) return c.hs
+    ? "你現在還在讀書，本金不大，這其實是最好的學習時機：現在犯錯的學費，比十年後便宜很多。先把觀念弄懂、把零用錢分好。想開自己的帳戶，可以在爸媽同意下一起辦，也可以先用家人的帳戶，等滿 18 歲再開。"
+    : "你現在的本金不大，這其實是最好的學習時機：現在犯錯的學費，比出社會後便宜很多。先用小金額把流程走過一遍，比讀十篇文章更有用。";
+  if (st === "starter" && c.invested) return "你已經踏進市場，但時間還不長。這個階段最值得做的，不是找更多消息，而是照著學習地圖，一步一步把基本功補齊。";
+  if (st === "starter" && c.novice && !c.unsafe && result.knowCorrect === 3) return "你現在站在起點，而且該懂的觀念，你大多已經懂了。接下來缺的不是再讀一本書，而是第一筆小小的實際投入：金額小到跌了也不心痛，重點是讓自己真的開始。";
+  if (st === "starter") return c.unsafe
+    ? "你現在站在起點，這其實是最好的位置。先把地基打穩，等預備金存好再進場，後面的路會好走很多。"
+    : "你現在站在起點，這其實是最好的位置。先把地基打穩，再用不影響生活的小金額起步，後面的路會好走很多。";
+  if (st === "growing") return "你已經在路上走了一段，也有了自己的經驗。接下來要做的，是把手上的做法整理得更穩、更清楚，工具只挑真的用得上的。";
+  if (c.delegated) return "這些年裡，你把不少決定交給了信得過的人，這很合理。這封信只想多陪你做一件事：看清楚自己手上有什麼。";
+  return "你在市場裡走過很多年，看過起起落落。所以這封信不跟你談基礎，只想陪你一起想一想：現在的做法，還適不適合此刻的人生。";
+}
+// 依作答點名的狀況：一件事一段，說清楚為什麼排在最前面
+function situationParas(result, c, skipFollow) {
+  const out = [];
+  if (c.unsafe || c.debt) {
+    const items = [result.flags.includes("fund") && (c.fundLow ? "預備金還不夠" : "預備金可能還不夠"), result.flags.includes("need") && "一年內可能要用錢", c.debt && "還款壓力偏重"].filter(Boolean).join("、");
+    out.push(`你的安全墊（急用的預備金，和近期要用的錢）還沒顧好：${items}。${c.novice ? "剛起步的人大多是這樣，" : ""}先把它補起來，市場跌的時候，你才不會被迫在低點賣掉。${result.flags.includes("fund") && !c.fundLow ? "預備金夠不夠，照地圖上的算法算一次就知道；每月花費不高的人，可能其實已經夠了。" : ""}`);
+  }
+  if (c.lever || (c.concentrate && (c.unsafe || c.debt))) {
+    const items = [c.lever && "用了槓桿", c.concentrate && (c.crypto && !c.picker && !c.trader && !c.employee ? "錢集中在一種加密貨幣" : "單一持股超過三成")].filter(Boolean).join("、");
+    out.push(`有件事我想說得直接一點：${items}，不是常見的小問題，而是一次就可能讓你離開市場的風險。學習地圖把它排在第一步，請先處理。`);
+  } else if (c.concentrate) {
+    out.push("單一持股超過三成，是你整份計畫裡最大的一個風險。不一定要馬上賣，但值得算一次：這一檔跌掉一半，你的生活和計畫會變成怎樣。" + (c.employee ? "你持有的是自己公司的股票，薪水和資產等於押在同一個地方，這一點值得特別留意。" : ""));
+  }
+  if (c.retire) out.push("你投資的是退休生活要靠的錢。這種錢最怕的不是賺得少，而是要用的時候剛好遇到大跌，所以地圖先陪你確認，未來幾年的生活費放在不太會跌的地方。");
+  if (c.panic) out.push(c.lever
+    ? "你說這幾年，曾在大跌時賣掉大部分持股，不管是自己賣，還是被追繳斷頭。那一刻一定不好受，但那次的經驗，是這份計畫裡最有價值的資料：它告訴你，槓桿的上限和出場的規則，都要在冷靜的時候先定好。"
+    : "你說這幾年，曾在大跌時賣掉大部分持股。那一刻一定不好受，但那次的經驗，是這份計畫裡最有價值的資料：它告訴你，規則要在冷靜的時候就寫好，別留給恐慌的自己決定。");
+  if (c.follow && !skipFollow) out.push("你的買進常從別人的討論開始。這很正常，差別只在買之前有沒有自己檢查過。學習地圖上「買之前，先問自己三個問題」那一步，就是為這件事準備的。");
+  if (c.pocket) out.push(c.hs
+    ? "你的本金來自零用錢和紅包，這是很好的起點：金額小，犯錯的學費也小。趁現在把「先存再花、再拿一部分去投資」的習慣養起來，比賺多少更重要。"
+    : "你的本金來自零用錢、紅包或打工，還沒想好用途。這是很好的起點：金額小，犯錯的學費也小；也可以趁現在替這筆錢訂一個目標，像是畢業旅行、進修，或第一筆長期投資。");
+  if (result.life === "uni") out.push((c.unsafe ? "畢業前後，有三件事要跟著調整：一、先把預備金補到 3 個月的自己開銷，有了正職收入，再改用「上個月總花費 × 3」重算（收入越不穩定，越該多存，有人會存到 6 個月）；" : "畢業前後，有三件事要跟著調整：一、你現在的預備金對學生來說夠用了，有了正職收入，改用「上個月總花費 × 3」重算（收入越不穩定，越該多存，有人會存到 6 個月）；") + "二、定期定額的金額可以跟著薪水調高；三、開始有明確目標（例如買房、進修）時，把那筆錢和長期投資分開放。");
+  if (c.crypto && !c.concentrate) out.push("你有買加密貨幣。它的漲跌比股票劇烈很多，學習地圖先幫你訂了上限：占全部投資最多一成，而且只用合法登記的交易所。");
+  if (c.goalYears === "long") out.push("你的錢有明確的目標（像教育金、買房），而且離要用還有十年以上。這段時間，下跌是可以等的，股票可以放多一點；等到離用錢剩五年左右，再開始一年一年把比例降下來。");
+  if (c.goalYears === "mid") out.push("你的錢有明確的目標，大約三到十年後要用，像買房頭期款。離用錢越近，越不能承受大跌，所以剩三到五年的時候，就要開始把股票比例往下調；例如七、八年後要用，大約兩、三年後就該開始調。這筆錢最好跟長期投資分開放，才算得清楚夠不夠。");
+  if (c.delegated && !c.retire) out.push("你的錢有一部分是理專或別人幫忙安排的。這沒有不好，但你值得知道自己手上有什麼、每年付了多少費用。");
+  return out;
+}
+function mottoFor(typeName, c) {
+  if (typeName === "策略家" && c.concentrate2 && c.holdsM2) return "最熟悉的那一檔，也要定期重新檢查。";
+  if (typeName === "策略家" && c.holdsWinners) return "不能動的錢，每年確認一次是不是真的不能動。";
+  if (typeName === "策略家" && c.holdsNeutral) return "把心裡的那條線，寫成規則。";
+  if (typeName === "開拓者" && !c.trader && !c.panic) return c.passive ? "核心照扣，個股看錯就認。" : "看錯的條件，買之前就寫好。";
+  if (c.hs && !c.passive) return "先存再花，存下的一部分才拿去投資。";
+  if (typeName === "守望者" && c.exited && !c.invested) return "先找到上次錯在哪，再決定回不回去。";
+  if (typeName === "守望者" && c.passive && !c.retire && !c.panic) return "已經在扣的，跌了也照扣。";
+  if (typeName === "守望者") {
+    if (c.retire) return "要用的錢，先放在安全的地方。";
+    if (c.unsafe && !c.invested) return "先存好底，再小額開始。";
+    if (c.delegated && !c.panic) return "看清楚手上有什麼，再決定。";
+  }
+  if (c.panic && typeName !== "開拓者") return "什麼時候賣，冷靜時就先寫好。";
+  return MOTTO[typeName];
+}
+function retestFor(result, c) {
+  const st = result.expStage;
+  if (c.exited && !c.invested) return "重新進場、照學習地圖走滿三個月之後";
+  if (c.hs) return "上大學、開始打工或滿 18 歲之後";
+  if (st === "starter") return c.invested ? "照學習地圖走滿三個月之後" : "開始投資、經歷第一次下跌之後";
+  if (st === "growing") return result.plan.pre.length ? "把第一步做完、再照地圖走一季之後" : "照第一步做滿一季之後";
+  if (c.trader) return "策略連續失效、或資金規模明顯變大時";
+  if (c.retire) return "開始提領、或生活開銷明顯改變時";
+  return "退休、開始提領或資金明顯變大時";
+}
+const FAREWELL = {
+  開拓者:"願你每一次出手，都備好了退路。", 策略家:"願你守得住，也放得開。", 追浪人:"願你聽得見風聲，也聽得見自己。",
+  觀察家:"願你看得懂別人的方法，也走得出自己的路。", 深耕者:"願你的耐心，一直有清楚的底線陪著。",
+  磐石:"願你的安穩，也跑得贏時間。", 取經人:"願你的紀律，每一年都對得上目標。", 守望者:"願你慢慢來，也一直在前進。",
+};
+
+function LetterSection({ result, sample, go }) {
+  const { typeName, plan } = result;
+  const c = ctxOf(result);
+  const f = plan.first;
+  const q = result.quote;
+  // 開場引用使用者自己的答案（題目與選項原文），接著說這個選擇代表什麼
+  const qs = q ? q.q.opts.find(o => o.t === q.opt).s : null;
+  const qLead = qs === 1 || qs === 4 ? "讀你的答案時，有一題我停了一下。" : "你的答案裡，有一題很能代表你。";
+  const followRead = !!q && q.q.id === "r1" && q.side === "low" && (c.follow || qs === 1);
+  const qRead = followRead
+    ? "這個選擇很誠實。跟著大家買很自然，只是要記得：大家一起買的時候，通常也會一起賣。所以買之前，先問自己一句：如果大家都賣了，我還會留著嗎？"
+    : q && (qs === 3 ? Q.LETTER_QUOTE[q.dim][q.side].replace("下跌時甚至會想加碼。", "") : Q.LETTER_QUOTE[q.dim][q.side]);
+  const open = q ? `${qLead}在「${q.q.short}」這題，你選的是「${q.opt}」。${qRead}` : "謝謝你願意停下腳步，花幾分鐘好好看看自己。";
+  const whyBase = result.goal === "start" ? null : (Q.LETTER_OPEN[result.expStage] || {})[result.goal];
+  // 想知道適合什麼方式的人，直接回答
+  const why = whyBase && result.goal === "fit" ? `你問我，哪一種方式適合你。我的答案是：${liteVerdict(result)}` : whyBase;
+  // 開場已經講過階段的，不再重複階段段落
+  const warmText = typeWarm(typeName, c);
+  const stageLine = warmText === TYPE_WARM[typeName].exited ? null
+    : why && result.expStage !== "starter" && !c.delegated && !(c.exited && !c.invested) ? null : stageWarm(result, c);
+  const misfit = plan.fit && !plan.fit.fit;
+  const ink = "#3E2A14", soft = "#5E4326", faint = "#86653F";
+  const para = { fontSize:16, color:ink, lineHeight:2.1, marginBottom:14 };
+  return (
+    <>
+    <Parchment>
+      <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+        <div className="wax"><Sigil name={typeName} size={50} mono="#F6DDB0" /></div>
+        <div style={{ minWidth:0 }}>
+          <p className="pc-title" style={{ fontSize:12, color:faint }}>A LETTER FOR YOU</p>
+          <p style={{ fontSize:22, fontWeight:700, color:ink, lineHeight:1.3 }}>寫給{typeName}的一封信</p>
+        </div>
+      </div>
+      <Flourish />
+      {sample && <p style={{ fontSize:13, color:faint, textAlign:"center", marginBottom:10 }}>這是一封寫給範例投資人的信</p>}
+
+      <p style={{ ...para, fontWeight:700 }}>親愛的{typeName}：</p>
+      <p style={para}>
+        <span aria-hidden="true" style={{ float:"left", fontSize:44, lineHeight:1, fontWeight:700, color:"#8E1B1B", margin:"4px 8px 0 0" }}>{open[0]}</span>
+        <span className="sr-only">{open[0]}</span>{open.slice(1)}
+      </p>
+      {why && <p style={para}>{why}</p>}
+      <p style={para}>{warmText}</p>
+      {result.selfType !== typeName && (
+        <p style={para}>還有一件小事想跟你說。只看情境題，你比較像「{result.selfType}」；但{[
+          result.behaviorAdjust.includes("u") && "你在大跌時賣過，代表真正遇到起伏時，心裡的壓力比自己想像的大",
+          result.behaviorAdjust.includes("r") && "你的買進常從別人的討論開始，代表做決定時，你比自己想像的更常把別人的看法放進來",
+        ].filter(Boolean).join("；")}，所以我把你放在「{typeName}」這一側。行動往往比想像誠實，這沒有好壞，只是更認識自己一點。</p>
+      )}
+      {situationParas(result, c, followRead || typeName === "追浪人" || warmText === TYPE_WARM[typeName].follow || warmText === TYPE_WARM[typeName].shaky).map((t, i) => <p key={i} style={para}>{t}</p>)}
+      {stageLine && <p style={para}>{stageLine}</p>}
+
+      <div className="pc-card" style={{ padding:"14px 16px", margin:"4px 0 16px" }}>
+        <p style={{ fontSize:13, color:faint, marginBottom:4 }}>如果想找個起點</p>
+        <p style={{ fontSize:17, fontWeight:700, color:"#6B2E0E", lineHeight:1.7, textWrap:"balance" }}>可以從「{f.t}」開始</p>
+        {f.brief && <p style={{ fontSize:15, color:soft, lineHeight:1.9, marginTop:4 }}>{f.brief}</p>}
+        <p style={{ fontSize:14, color:soft, lineHeight:1.8, marginTop:6 }}>{f.kind === "risk" || f.kind === "safety" ? "這一步排在前面，是因為它會保護後面每一步。"
+          : c.novice && result.knowCorrect === 3 ? "這一步不用再等，這個禮拜就可以做。"
+          : "這是依你的作答整理出來的起點，照你自己的步調走就好。"}</p>
+        <button className="pc-link" onClick={() => go(1)} style={{ marginTop:8 }}>打開學習地圖，看這一步怎麼做</button>
+      </div>
+
+      {c.trader
+        ? <p style={para}>交易這條路，活得久比賺得快重要。先把第一條規則做成習慣，確定自己真的照著做了，再加下一條。</p>
+        : result.expStage === "starter" && <p style={para}>地圖上的每一步，都不必一次做完。先把第一步做成習慣，再走下一步，穩穩地走，通常比較走得遠。</p>}
+      <p style={para}>哪天市場讓你心慌、或讓你太興奮的時候，回來看看這句話：</p>
+      <p style={{ fontSize:20, fontWeight:700, color:"#6B2E0E", textAlign:"center", lineHeight:1.7, margin:"2px 0 16px" }}>「{mottoFor(typeName, c)}」</p>
+      <p style={para}>等到{retestFor(result, c)}，歡迎你回來再做一次測驗。到時候，看看自己走了多遠。</p>
+
+      <p style={{ fontSize:16, color:ink, textAlign:"right", marginTop:8, lineHeight:1.9 }}>
+        {typeName === "開拓者" && !c.trader && c.passive ? "願你大跌時照扣，看錯時也認得出來。"
+          : typeName === "取經人" && !c.passive && c.shakyFollower ? "願你找到一套方法，跌的時候也願意照著走。"
+          : FAREWELL[typeName]}<br /><span className="pc-title" style={{ fontSize:15, fontWeight:700 }}>— 你的投資教練</span>
+      </p>
+    </Parchment>
+    <p style={{ fontSize:12, color:CLR.sub, marginTop:12, lineHeight:1.7, textAlign:"center" }}>這封信依你的作答產生，用來規劃學習方向，不是針對個人的投資建議。</p>
+    </>
+  );
+}
+
+// ── 分頁一：測驗結果（維持上一版，含「下一步」摘要） ──
+function ResultTab({ result, sample }) {
+  const { typeName, plan, stage, flags, risks } = result;
+  const tc = TYPE_CLR[typeName], c = ctxOf(result), lite = liteFor(typeName, c);
+  const moment = momentFor(typeName, c);
+  // 範例頁講類型本身適合的方向，不講假設人物的現況
+  const routeKey = sample ? Q.TYPES[typeName].route : plan.routeKey;
+  const route = Q.ROUTES[routeKey], rc = ROUTE_CLR[routeKey];
+  const alerts = [...flags, ...risks];
+  const steps = [...plan.pre.map(p => ({ t:p.t, d:p.brief })), ...plan.modules.map(m => ({ t:m.t }))].slice(0, 4);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+      <div style={{ textAlign:"center", padding:"4px 0 6px" }}>
+        <div className="type-badge" style={{ width:128, margin:"0 auto 12px", filter:`drop-shadow(0 8px 18px ${tc.m}33)` }}>
+          <Sigil name={typeName} size={128} spin />
+        </div>
+        <p style={{ fontSize:13, color:CLR.sub, marginBottom:6 }}>你最接近</p>
+        <h1 style={{ fontSize:36, fontWeight:800, color:tc.m, letterSpacing:2 }}>{typeName}</h1>
+        <p style={{ fontSize:13, fontWeight:600, color:tc.m, marginTop:4 }}>{Q.typeTags(typeName).join("・")}</p>
+        <p style={{ fontSize:15, color:CLR.text, marginTop:6 }}>{typeName === "取經人" && !c.passive && c.shakyFollower ? "想讓錢長大，正在找一套能長期照著做的方法。" : Q.TYPES[typeName].tag}</p>
+        {result.neighbors.length > 0 && (
+          <p style={{ fontSize:13, color:CLR.sub, marginTop:8, lineHeight:1.7 }}>
+            {result.neighbors.map(n => Q.neighborLine(n, result.high)).join(" ")}
+          </p>
+        )}
+      </div>
+
+      <div style={{ ...cardS, background:tc.bg, boxShadow:"none", border:`1px solid ${tc.m}22`, padding:"16px 20px" }}>
+        <p style={{ fontSize:12, fontWeight:700, color:tc.m, letterSpacing:1, marginBottom:6 }}>你可能有過這種時刻</p>
+        <p style={{ fontSize:17, fontWeight:700, color:CLR.text, lineHeight:1.7 }}>{moment}</p>
+      </div>
+
+      <div style={{ ...cardS, display:"flex", flexDirection:"column", gap:18 }}>
+        {["u", "r", "m"].map(d => <Bar key={d} d={d} result={result} color={tc.m} />)}
+      </div>
+
+      <div style={cardS}>
+        {[["強項", lite.good, CLR.good, "star", CLR.goodBg], ["要小心", lite.watch, CLR.warn, "alert", CLR.warnBg], ["試試看", lite.try, tc.m, "bulb", tc.bg]].map(([k, v, c, icon, bg], i) => (
+          <div key={k} style={{ display:"flex", gap:12, alignItems:"center", padding:"10px 0", borderTop:i ? `1px solid ${CLR.border}` : "none" }}>
+            <span style={{ width:36, height:36, borderRadius:10, background:bg, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon name={icon} size={18} color={c} /></span>
+            <span style={{ fontSize:13, fontWeight:700, color:c, minWidth:44 }}>{k}</span>
+            <span style={{ fontSize:15, color:CLR.text, lineHeight:1.6 }}>{v}</span>
+          </div>
+        ))}
+      </div>
+
+      {alerts.length > 0 && (
+        <div style={{ ...cardS, background:CLR.warnBg, boxShadow:"none", border:`1px solid ${CLR.warnLine}` }}>
+          <p style={{ ...label, color:CLR.warn, display:"flex", alignItems:"center", gap:6 }}><Icon name="alert" size={15} color={CLR.warn} />先補強這幾件事（已排進學習地圖）</p>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+            {alerts.map(a => <span key={a} style={{ fontSize:13, padding:"4px 12px", borderRadius:20, background:CLR.card, color:CLR.warn, border:`1px solid ${CLR.warnLine}` }}>{ALERT[a]}</span>)}
+          </div>
+        </div>
+      )}
+
+      <div style={{ ...cardS, borderTop:`4px solid ${rc}` }}>
+        <p style={{ ...label, display:"flex", alignItems:"center", gap:6 }}><Icon name="flag" size={15} color={rc} />{sample ? "適合的方向" : "下一步"}</p>
+        <p style={{ fontSize:20, fontWeight:800, color:rc }}>
+          {route.name}
+          {!sample && <span style={{ fontSize:13, fontWeight:500, color:CLR.sub, marginLeft:8 }}>{Q.STAGES[stage]}階段{plan.practiceNote ? `・${NOTE_LABEL[noteKey(result)]}` : ""}</span>}
+        </p>
+        <p style={{ fontSize:14, color:CLR.text, lineHeight:1.7, margin:"6px 0 14px" }}>{sample ? `像你這樣${TYPE_PHRASE[typeName]}的人，比較適合「${route.name}」：${route.desc}` : liteVerdict(result)}</p>
+        {!sample && <ol style={{ listStyle:"none", display:"flex", flexDirection:"column", gap:10 }}>
+          {steps.map((s, i) => (
+            <li key={i} style={{ display:"flex", gap:12 }}>
+              <span style={{ flexShrink:0, width:22, height:22, borderRadius:11, fontSize:12, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center",
+                background:i === 0 ? rc : CLR.card, color:i === 0 ? "#fff" : rc, border:`2px solid ${rc}` }}>{i + 1}</span>
+              <div>
+                <p style={{ fontSize:15, fontWeight:i === 0 ? 700 : 500, color:CLR.text }}>{s.t}</p>
+                {s.d && i === 0 && <p style={{ fontSize:13, color:CLR.sub, lineHeight:1.6, marginTop:2 }}>{s.d}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>}
+      </div>
+    </div>
+  );
+}
+
+// ── 聯絡表單：送到 config.js 設定的 Google Apps Script，網址留空就不顯示 ──
+const CFG = window.QUIZ_CONFIG || {};
+const SENT_KEY = "investor-quiz-sent-v8-lite";
+const SUBMIT_URLS = [].concat(CFG.SUBMIT_URL || []).filter(Boolean);
+// 送出過聯絡資料的作答代碼清單（JSON 陣列）；舊版只存一個代碼字串，讀的時候一併相容
+function sentCodes() {
+  try {
+    const v = localStorage.getItem(SENT_KEY);
+    if (!v) return [];
+    if (v[0] !== "[") return [v];
+    const list = JSON.parse(v);
+    return Array.isArray(list) ? list : [];
+  } catch (e) { return []; }
+}
+// 這份結果是否已送出過聯絡資料：解鎖學習地圖與教練的信、表單顯示已送出，都只看這一個判斷
+function sentFor(code) { return !!code && sentCodes().includes(code); }
+function markSent(code) {
+  try { if (!sentFor(code)) localStorage.setItem(SENT_KEY, JSON.stringify([...sentCodes(), code])); } catch (e) {}
+}
+// 寫進試算表的「結果網址」：config.js 有設正式網址（http/https 開頭）就一律用它組，
+// 從本機檔案、單檔版或轉傳的檔作答也點得開；沒設或格式不對，才退回當下這一頁的網址
+function resultUrl(code) {
+  const site = String(CFG.SITE_URL || "").trim();
+  const base = /^https?:\/\//i.test(site) ? site : window.location.href;
+  return base.split("#")[0] + LINK.result(code);
+}
+function contactPayload(result, code, form) {
+  const opt = (qs, codeList, c) => { const i = codeList.indexOf(c); return i >= 0 ? qs.opts[i] : ""; };
+  const [p1, p2, p3] = Q.POS_QS;
+  return {
+    nickname:form.nickname.trim(), email:form.email.trim(), phone:form.phone.trim(), website:form.website,
+    type:result.typeName, u:Math.round(result.spectrum.u), r:Math.round(result.spectrum.r), m:Math.round(result.spectrum.m),
+    life:opt(Q.SAFE_QS[0], Q.SAFE_QS[0].codes, result.life),
+    practice:result.practices.map(c => opt(p1, p1.codes, c)).join("、"),
+    years:result.years ? opt(p2, p2.codes, result.years) : "", goal:opt(p3, p3.codes, result.goal),
+    know:`${result.knowCorrect} / ${Q.KNOW_QS.length}`, consent:"同意",
+    url:resultUrl(code), code, version:result.version,
+  };
+}
+function ContactForm({ result, code, onSent }) {
+  const sentBefore = sentFor(code);
+  const [form, setForm] = useState({ nickname:"", email:"", phone:"", website:"" });
+  const [consent, setConsent] = useState(false);
+  const [state, setState] = useState(sentBefore ? "sent" : "idle");
+  if (!SUBMIT_URLS.length) return null;
+  const emailBad = form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const phoneBad = form.phone.trim() && !/^[0-9+\-()\s]{8,20}$/.test(form.phone.trim());
+  // 稱呼必填；Email 和電話至少填一個（有填的那欄格式要對）
+  const hasName = !!form.nickname.trim();
+  const hasContact = !!(form.email.trim() || form.phone.trim());
+  const missing = [!hasName && "稱呼", !hasContact && "Email 或電話（擇一）", !consent && "勾選同意"].filter(Boolean);
+  const canSend = !missing.length && !emailBad && !phoneBad && state !== "sending";
+  const set = (k) => (e) => setForm({ ...form, [k]:e.target.value });
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!canSend) return;
+    setState("sending");
+    try {
+      // 每個收件網址各送一次，只要有一個送出成功就算完成
+      const body = contactPayload(result, code, form);
+      const ok = await Promise.all(SUBMIT_URLS.map(u => fetch(u, { method:"POST", mode:"no-cors", body:new URLSearchParams(body) }).then(() => true, () => false)));
+      if (!ok.some(Boolean)) throw new Error("all failed");
+      markSent(code);
+      setState("sent");
+      if (onSent) onSent();
+    } catch (err) { setState("error"); }
+  };
+  const input = { width:"100%", padding:"11px 12px", borderRadius:10, border:`1px solid ${CLR.border}`, fontSize:15, fontFamily:"inherit", background:"#fff", color:CLR.text };
+  const fl = { display:"block", fontSize:13, fontWeight:600, color:CLR.sub, marginBottom:4 };
+  if (state === "sent") return (
+    <div style={{ ...cardS, width:"100%", textAlign:"center", boxShadow:"none", border:`1px solid ${CLR.goodLine}`, background:CLR.goodBg }}>
+      <p style={{ fontSize:15, fontWeight:700, color:CLR.good }}>{CFG.THANKS_TEXT || "已收到，謝謝你！"}</p>
+    </div>
+  );
+  return (
+    <form onSubmit={submit} style={{ ...cardS, width:"100%", display:"flex", flexDirection:"column", gap:12 }}>
+      <div>
+        <p style={{ fontSize:16, fontWeight:800, color:CLR.text }}>{CFG.FORM_TITLE}</p>
+        <p style={{ fontSize:13, color:CLR.sub, lineHeight:1.7, marginTop:4 }}>{CFG.FORM_DESC}</p>
+      </div>
+      <label><span style={fl}>稱呼<span style={{ color:CLR.bad }}> *</span></span><input style={input} value={form.nickname} onChange={set("nickname")} maxLength={40} autoComplete="nickname" placeholder="例如：小明、王先生" required /></label>
+      <div style={{ display:"flex", flexDirection:"column", gap:10, padding:"12px", borderRadius:10, background:CLR.bg }}>
+        <p style={{ fontSize:13, fontWeight:600, color:CLR.sub }}>聯絡方式<span style={{ color:CLR.bad }}> *</span><span style={{ fontWeight:400 }}>　Email 和電話至少填一個</span></p>
+        <label><span style={fl}>Email</span><input style={input} type="email" value={form.email} onChange={set("email")} maxLength={120} autoComplete="email" inputMode="email" />
+          {emailBad && <span style={{ fontSize:12, color:CLR.bad }}>Email 格式好像不太對</span>}</label>
+        <label><span style={fl}>電話</span><input style={input} type="tel" value={form.phone} onChange={set("phone")} maxLength={20} autoComplete="tel" inputMode="tel" />
+          {phoneBad && <span style={{ fontSize:12, color:CLR.bad }}>電話請填數字，例如 0912345678</span>}</label>
+      </div>
+      <input className="sr-only" tabIndex={-1} aria-hidden="true" autoComplete="off" value={form.website} onChange={set("website")} />
+      <label style={{ display:"flex", gap:8, alignItems:"flex-start", fontSize:13, color:CLR.sub, lineHeight:1.7, cursor:"pointer" }}>
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop:5, width:16, height:16, flexShrink:0 }} />
+        <span>{CFG.CONSENT_TEXT}</span>
+      </label>
+      {state === "error" && <p style={{ fontSize:13, color:CLR.bad }}>送出失敗，請檢查網路後再試一次。</p>}
+      {missing.length > 0 && <p style={{ fontSize:12, color:CLR.sub, textAlign:"center" }}>還差：{missing.join("、")}</p>}
+      <button type="submit" disabled={!canSend} style={{ padding:"12px", borderRadius:10, border:"none", fontSize:15, fontWeight:700, cursor:canSend ? "pointer" : "default",
+        color:canSend ? "#fff" : CLR.faint, background:canSend ? `linear-gradient(135deg, ${CLR.accent}, ${CLR.accentEnd})` : CLR.progressBg }}>
+        {state === "sending" ? "送出中…" : (CFG.SUBMIT_LABEL || "送出")}
+      </button>
+    </form>
+  );
+}
+
+// ── 分頁切換：上方分頁列＋內容滑入動畫，下方按鈕帶往下一頁 ──
+const TABS = [
+  { key:"result", label:"測驗結果", icon:"target", next:"看我的學習地圖" },
+  { key:"map", label:"學習地圖", icon:"map", next:"讀教練的信" },
+  { key:"letter", label:"教練的信", icon:"mail", next:null },
+];
+
+// 還沒送出聯絡資料時，教練的信不能進入
+const LOCKED_TAB = "letter";
+
+function TabBar({ tab, go, color, locked }) {
+  return (
+    <div role="tablist" style={{ position:"sticky", top:0, zIndex:10, background:"rgba(248,246,252,0.92)", backdropFilter:"blur(10px)", padding:"8px 0 10px", margin:"0 0 14px" }}>
+      <div style={{ position:"relative", display:"grid", gridTemplateColumns:`repeat(${TABS.length}, 1fr)`, background:CLR.card, borderRadius:14, padding:4, boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
+        <span aria-hidden="true" style={{ position:"absolute", top:4, bottom:4, left:4, width:`calc((100% - 8px) / ${TABS.length})`, borderRadius:10, background:color,
+          transform:`translateX(${tab * 100}%)`, transition:"transform .35s cubic-bezier(.2,.8,.2,1)" }} />
+        {TABS.map((t, i) => {
+          const off = locked && t.key === LOCKED_TAB;
+          return (
+            <button key={t.key} id={`tab-${t.key}`} role="tab" aria-selected={tab === i} disabled={off} aria-disabled={off || undefined}
+              title={off ? "送出聯絡方式後開啟" : undefined} onClick={() => go(i)}
+              style={{ position:"relative", zIndex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 4px", border:"none", background:"none",
+                fontSize:14, fontWeight:tab === i ? 800 : 500, color:tab === i ? "#fff" : CLR.sub, cursor:off ? "not-allowed" : "pointer", opacity:off ? 0.45 : 1, transition:"color .25s, opacity .25s" }}>
+              <Icon name={off ? "lock" : t.icon} size={15} color={tab === i ? "#fff" : CLR.faint} />{t.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ResultView({ result, sample, code }) {
+  const [tab, setTab] = useState(0);
+  const [dir, setDir] = useState(1);
+  // 送出聯絡資料前：學習地圖的課程模糊、教練的信不能進入。範例頁、沒設收件網址時不啟用
+  const [sent, setSent] = useState(() => sentFor(code));
+  const locked = !sample && SUBMIT_URLS.length > 0 && !sent;
+  const tc = TYPE_CLR[result.typeName];
+  const go = (i) => {
+    if (i === tab) return;
+    if (locked && TABS[i].key === LOCKED_TAB) return;
+    setDir(i > tab ? 1 : -1);
+    setTab(i);
+    window.scrollTo({ top:0, behavior:"smooth" });
+  };
+  const toForm = () => { const el = document.getElementById("contact-form"); if (el) el.scrollIntoView({ behavior:"smooth", block:"start" }); };
+  // 範例頁只給看測驗結果；學習地圖和教練的信要做完測驗、依自己的狀況產生
+  const next = sample ? null : TABS[tab].next;
+  // 下一頁還鎖著時，按鈕改成帶去填表單，不能繞過
+  const nextLocked = !!next && locked && TABS[tab + 1].key === LOCKED_TAB;
+  return (
+    <div>
+      {sample && <p style={{ fontSize:13, color:CLR.sub, textAlign:"center", lineHeight:1.7, marginBottom:4 }}>「{result.typeName}」範例・假設{sampleProfile(result.typeName).desc}<br />不是你的結果</p>}
+      {!sample && <TabBar tab={tab} go={go} color={CLR.accent} locked={locked} />}
+      <div key={tab} role="tabpanel" aria-labelledby={`tab-${TABS[tab].key}`} className={dir > 0 ? "slide-in-right" : "slide-in-left"}>
+        {tab === 0 && <ResultTab result={result} sample={sample} />}
+        {!sample && tab === 1 && <MapSection result={result} locked={locked} />}
+        {!sample && tab === 2 && <LetterSection result={result} sample={sample} go={go} />}
+      </div>
+
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:12, marginTop:22 }}>
+        {sample && <p style={{ fontSize:14, color:CLR.sub, textAlign:"center", lineHeight:1.7 }}>做完測驗，就能看到依你自己的狀況整理的學習地圖和教練的信。</p>}
+        {next
+          ? <button id="next-tab" onClick={() => (nextLocked ? toForm() : go(tab + 1))} style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"14px 32px", borderRadius:12, border:"none", cursor:"pointer",
+              fontSize:16, fontWeight:700, color:"#fff", background:`linear-gradient(135deg, ${CLR.accent}, ${CLR.accentEnd})`, boxShadow:"0 8px 20px rgba(109,40,217,0.28)" }}>
+              {nextLocked ? "填寫資料解鎖教練的信" : next}<Icon name={nextLocked ? "lock" : "chevron"} size={18} color="#fff" />
+            </button>
+          : <a href={LINK.quiz} style={{ ...btn, padding:"14px 32px", fontSize:16, fontWeight:700, color:"#fff", border:"none", background:`linear-gradient(135deg, ${CLR.accent}, ${CLR.accentEnd})` }}>{sample ? "做測驗看自己的結果" : "重新測驗"}</a>}
+        <div style={{ display:"flex", gap:16, fontSize:13 }}>
+          {tab > 0 && <button onClick={() => go(tab - 1)} style={{ background:"none", border:"none", padding:0, color:CLR.sub, cursor:"pointer", fontSize:13 }}>← 上一頁</button>}
+          {!sample && tab < TABS.length - 1 && <a href={LINK.quiz} style={{ color:CLR.sub }}>重新測驗</a>}
+          <a href={LINK.types} style={{ color:CLR.sub }}>看其他類型</a>
+        </div>
+        {!sample && TABS[tab].key === "map" && (
+          <div id="contact-form" style={{ width:"100%", scrollMarginTop:90 }}>
+            <ContactForm result={result} code={code} onSent={() => setSent(true)} />
+          </div>
+        )}
+        <p style={{ fontSize:12, color:CLR.sub, textAlign:"center", lineHeight:1.7 }}>{!sample && <>包含個人分析數據，建議儲存或填寫上方 Email 備份。<br /></>}依作答整理，僅供自我了解與學習規劃，不是針對個人的投資建議。</p>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+      <div style={{ textAlign:"center", padding:"20px 0 8px" }}>
+        <h1 style={{ fontSize:24, fontWeight:800, color:CLR.text, marginBottom:16 }}>還沒有結果</h1>
+        <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+          <a href={LINK.quiz} style={{ ...btn, background:CLR.accent, color:"#fff", border:"none", fontWeight:600 }}>開始測驗</a>
+        </div>
+      </div>
+      <p style={{ ...label, textAlign:"center", marginBottom:0 }}>8 種類型</p>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:10 }}>
+        {Object.entries(Q.TYPES).map(([name, t]) => (
+          <a key={name} className="type-card" href={LINK.result(encode(sampleAnswers(name)), true)} style={{ ...cardS, padding:"12px 16px", textDecoration:"none", background:TYPE_CLR[name].bg, boxShadow:"none" }}>
+            <p style={{ fontSize:16, fontWeight:700, color:TYPE_CLR[name].m, display:"flex", alignItems:"center", gap:10 }}><Sigil name={name} size={40} />{name}</p>
+            <p style={{ fontSize:12, fontWeight:600, color:TYPE_CLR[name].m, marginTop:4, letterSpacing:.5 }}>{Q.typeTags(name).join("・")}</p>
+            <p style={{ fontSize:13, color:CLR.sub, marginTop:2, lineHeight:1.6 }}>{t.tag}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [hash, setHash] = useState(readHash);
+  useEffect(() => {
+    const on = () => { setHash(readHash()); window.scrollTo({ top:0 }); };
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  const answers = decode(hash.code);
+  return (
+    <div style={{ fontFamily:FONT, background:CLR.bg, minHeight:"100vh", paddingBottom:40 }}>
+      <div style={{ ...wrap, paddingTop:14, paddingBottom:6 }}>
+        <a href={LINK.quiz} style={{ fontSize:14, fontWeight:700, color:CLR.text, textDecoration:"none" }}>投資者性格探索</a>
+      </div>
+      <div style={wrap}>
+        {answers ? <ResultView key={hash.code} result={Q.calcResult(answers)} sample={hash.sample} code={hash.code} /> : <EmptyState />}
+      </div>
+    </div>
+  );
+}
+
+  return App;
+})();
+
+// ── 依網址標記切換畫面 ──
+const TITLES = { quiz:"投資者性格探索", result:"投資者性格探索｜結果" };
+function Root() {
+  const [view, setView] = React.useState(() => viewOf(window.location.hash));
+  React.useEffect(() => {
+    const on = () => setView(viewOf(window.location.hash));
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  React.useEffect(() => { document.title = TITLES[view]; window.scrollTo({ top:0 }); }, [view]);
+  return view === "result" ? <ResultApp /> : <QuizApp />;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
+</script>
+</body>
+</html>
