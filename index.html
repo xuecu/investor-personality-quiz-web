@@ -2274,6 +2274,31 @@ function sentCodes() {
 }
 // 這份結果是否已送出過聯絡資料：解鎖學習地圖與教練的信、表單顯示已送出，都只看這一個判斷
 function sentFor(code) { return !!code && sentCodes().includes(code); }
+// Only the receipt status is returned. Opening a result never resubmits contact data.
+function checkRecordedSubmission(code) {
+  if (!/^8-[a-zA-Z0-9]{1,100}$/.test(String(code || "")) || !SUBMIT_URLS[0]) return Promise.resolve(false);
+  return new Promise(resolve => {
+    const callback = "quizReceipt_" + Math.random().toString(36).slice(2);
+    const script = document.createElement("script");
+    let timer;
+    const finish = recorded => {
+      clearTimeout(timer);
+      script.remove();
+      // Keep a harmless callback briefly in case a timed-out response arrives late.
+      window[callback] = () => {};
+      setTimeout(() => { delete window[callback]; }, 60000);
+      resolve(recorded === true);
+    };
+    window[callback] = data => finish(!!data && data.recorded === true);
+    script.onerror = () => finish(false);
+    timer = setTimeout(() => finish(false), 15000);
+    const url = new URL(SUBMIT_URLS[0]);
+    url.searchParams.set("receipt", code);
+    url.searchParams.set("callback", callback);
+    script.src = url.toString();
+    document.head.appendChild(script);
+  });
+}
 function markSent(code) {
   try { if (!sentFor(code)) localStorage.setItem(SENT_KEY, JSON.stringify([...sentCodes(), code])); } catch (e) {}
 }
@@ -2398,6 +2423,15 @@ function ResultView({ result, sample, code }) {
   const [dir, setDir] = useState(1);
   // 送出聯絡資料前：學習地圖的課程模糊、教練的信不能進入。範例頁、沒設收件網址時不啟用
   const [sent, setSent] = useState(() => sentFor(code));
+  useEffect(() => {
+    let active = true;
+    if (!sample && !sentFor(code)) {
+      checkRecordedSubmission(code).then(recorded => {
+        if (active && recorded) { markSent(code); setSent(true); }
+      });
+    }
+    return () => { active = false; };
+  }, [code, sample]);
   const locked = !sample && SUBMIT_URLS.length > 0 && !sent;
   const tc = TYPE_CLR[result.typeName];
   const go = (i) => {
@@ -2509,3 +2543,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
 </script>
 </body>
 </html>
+
