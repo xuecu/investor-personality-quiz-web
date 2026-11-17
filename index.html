@@ -101,7 +101,7 @@
 <script>/* quiz-core.js */
 /* 投資者性格探索 v8：題目、文案與計分（測驗頁與結果頁共用）；客群 15～40 歲，以 20～30 歲為主 */
 const QUIZ = (() => {
-  const VERSION = "8.1";
+  const VERSION = "8.3";
 
   // ── 第 1 關：性格情境題（3 維度 × 5 題）──
   // s = 計分（1 = 追求穩定／借鑒他人／保本優先，4 = 接受波動／自己判斷／成長優先）
@@ -185,6 +185,20 @@ const QUIZ = (() => {
       opts:["聽到身邊的人或社群在討論，之後跟著買進","用過融資、借錢投資，或做過當沖、期貨、選擇權、槓桿 ETF","市場或手上某一檔大跌時，賣掉了大部分持股（自己決定賣、或被追繳斷頭都算）","有一檔股票或一種加密貨幣（公司配發的也算，不含 ETF）占了投資資產三成以上","以上都沒有遇過"],
       codes:["follow","lever","panic","concentrate","none"] },
   ];
+  // ── 學習規劃（測驗最後 2 題）：不計分、不影響類型，也不寫進作答代碼；只跟聯絡資料一起送進試算表 ──
+  // 試算表存的是選項文字；複選題用「、」串起來
+  // 年齡：放在開始前的填資料頁（結果頁底部表單也有），區間不重疊；只送進試算表，不計分
+  const AGE_OPTS = ["未滿 18 歲","18～24 歲","25～29 歲","30～39 歲","40～49 歲","50～59 歲","60～69 歲","70 歲以上"];
+
+  const EXTRA_QS = [
+    { id:"x1", text:"下面這些投資領域，你曾經想了解、或現在想了解的有哪些？（可複選）", multi:true, exclusive:[10], cols:2,
+      opts:["基本面（看公司賺不賺錢、值多少）","籌碼面（看法人、大戶在買還是賣）","技術面（看股價走勢圖找買賣點）","基金","ETF","美股","債券","期貨","選擇權","區塊鏈（加密貨幣等）","還沒想過，想先從最基礎的開始"],
+      sheet:["基本面","籌碼面","技術面","基金","ETF","美股","債券","期貨","選擇權","區塊鏈","還沒想過"] },
+    { id:"x2", text:"為了達成你的投資目標，你未來每個月預計花多少錢在投資學習上？",
+      note:"參考算法：打算投入市場的資金如果是 50 萬元，每月學習預算大約抓 5,000 元",
+      opts:["2,000 元以下","2,000～3,000 元","3,000～4,000 元","4,000～5,000 元","5,000～6,000 元","6,000 元以上"] },
+  ];
+
   // 只有「別人推薦就買」才往借鑒他人修正；自己查證過（checked）與看新聞（media）都不調整
   const SOURCE_FOLLOW = ["social","feed","guru"];
   const PRACTICE_RANK = ["trader","picker","passive","delegated","crypto","employee","family","trying","exited","none"];
@@ -876,7 +890,7 @@ const QUIZ = (() => {
     return base;
   }
 
-  return { VERSION, typeTags, reportFor, routeLine, neighborLine, SCALE_QS, KNOW_QS, SAFE_QS, POS_QS, BEHAV_QS, DIMS, DIM_TEXT, TYPE_KEY, TYPES, REPORT_TITLES, REPORTS, ROUTES, STAGES, MODULES,
+  return { VERSION, typeTags, reportFor, routeLine, neighborLine, SCALE_QS, KNOW_QS, SAFE_QS, POS_QS, BEHAV_QS, EXTRA_QS, AGE_OPTS, DIMS, DIM_TEXT, TYPE_KEY, TYPES, REPORT_TITLES, REPORTS, ROUTES, STAGES, MODULES,
            START_TEXT, ZONE_LABEL, LIFE, LETTER_OPEN, LETTER_QUOTE, calcResult, buildLetter };
 })();
 if (typeof module !== "undefined") module.exports = QUIZ;
@@ -1144,7 +1158,12 @@ window.QUIZ_CONFIG = {
   // 注意：各單位自己部署時要改成自己的網址；改網址只影響之後的資料，已寫進試算表的舊連結不會跟著變。
   SITE_URL: "https://xuecu.github.io/investor-personality-quiz-web/",
 
-  // 聯絡表單的文字（通用版，可依用途自行改寫）
+  // 開始作答前的填資料頁（按「開始測驗」後出現；SUBMIT_URL 全部留空時不出現，直接開始作答）
+  START_FORM_TITLE: "開始之前，先留下你的聯絡方式",
+  START_FORM_DESC: "做完測驗，完整的學習地圖和教練的信會直接打開；我們也會依你的結果，寄給你【實戰教學資源包＋下一階段學習行動指南】。",
+  START_SUBMIT_LABEL: "開始作答",
+
+  // 聯絡表單的文字（通用版，可依用途自行改寫）——結果頁底部那一張，給「直接打開結果連結、沒在開始前填過資料」的人用
   FORM_TITLE: "別讓測驗結果停在這，領取專屬於你的「理財升級攻略」",
   FORM_DESC: "留下聯絡方式，立即獲取符合你目前財務階段的【實戰教學資源包＋下一階段學習行動指南】，幫你避開常見投資陷阱！",
   CONSENT_TEXT: "我同意將上面填寫的聯絡資料與本次測驗結果，提供給本測驗的主辦單位，用於聯繫與提供相關資訊。我可以隨時要求查詢、更正或刪除。未滿 18 歲請在家長或監護人同意後再送出。",
@@ -1160,6 +1179,121 @@ window.QUIZ_CONFIG = {
 // 測驗與結果合在同一個檔案：網址 # 後面沒有作答代碼時顯示測驗，有代碼（或 #types）時顯示結果。
 // 按鈕只改 # 標記、不寫檔名，所以檔案怎麼改名、放哪裡都連得回來。
 const { viewOf } = window.QUIZ_SHARED;
+
+// ── 聯絡資料（測驗與結果共用）：送到 config.js 設定的 Google Apps Script，網址全部留空就不收資料 ──
+// 一次作答＝試算表一列，用「名單編號」（lead）串起來：
+//   開始作答前填資料 → 送一次（stage=start），試算表先出現這個人，就算中途離開也留得住；
+//   做完測驗 → 再送一次（stage=done），同一列補上類型、分數、學習規劃兩題與結果網址。
+// 結果頁底部的表單（直接打開結果連結的人用）沒有名單編號，照舊每送一次新增一列。
+const CONTACT = (() => {
+  const Q = window.QUIZ;
+  const { LINK } = window.QUIZ_SHARED;
+  const CFG = window.QUIZ_CONFIG || {};
+  const SENT_KEY = "investor-quiz-sent-v8-lite";
+  const SUBMIT_URLS = [].concat(CFG.SUBMIT_URL || []).filter(Boolean);
+  // 送出過聯絡資料的作答代碼清單（JSON 陣列）；舊版只存一個代碼字串，讀的時候一併相容
+  function sentCodes() {
+    try {
+      const v = localStorage.getItem(SENT_KEY);
+      if (!v) return [];
+      if (v[0] !== "[") return [v];
+      const list = JSON.parse(v);
+      return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+  }
+  // 這份結果是否已送出過聯絡資料：解鎖學習地圖與教練的信、表單顯示已送出，都只看這一個判斷
+  function sentFor(code) { return !!code && sentCodes().includes(code); }
+  // Only the receipt status is returned. Opening a result never resubmits contact data.
+  function checkRecordedSubmission(code) {
+    if (!/^8-[a-zA-Z0-9]{1,100}$/.test(String(code || "")) || !SUBMIT_URLS[0]) return Promise.resolve(false);
+    return new Promise(resolve => {
+      const callback = "quizReceipt_" + Math.random().toString(36).slice(2);
+      const script = document.createElement("script");
+      let timer;
+      const finish = recorded => {
+        clearTimeout(timer);
+        script.remove();
+        // Keep a harmless callback briefly in case a timed-out response arrives late.
+        window[callback] = () => {};
+        setTimeout(() => { delete window[callback]; }, 60000);
+        resolve(recorded === true);
+      };
+      window[callback] = data => finish(!!data && data.recorded === true);
+      script.onerror = () => finish(false);
+      timer = setTimeout(() => finish(false), 15000);
+      const url = new URL(SUBMIT_URLS[0]);
+      url.searchParams.set("receipt", code);
+      url.searchParams.set("callback", callback);
+      script.src = url.toString();
+      document.head.appendChild(script);
+    });
+  }
+  function markSent(code) {
+    try { if (!sentFor(code)) localStorage.setItem(SENT_KEY, JSON.stringify([...sentCodes(), code])); } catch (e) {}
+  }
+  // 寫進試算表的「結果網址」：config.js 有設正式網址（http/https 開頭）就一律用它組，
+  // 從本機檔案、單檔版或轉傳的檔作答也點得開；沒設或格式不對，才退回當下這一頁的網址
+  function resultUrl(code) {
+    const site = String(CFG.SITE_URL || "").trim();
+    const base = /^https?:\/\//i.test(site) ? site : window.location.href;
+    return base.split("#")[0] + LINK.result(code);
+  }
+  function contactPayload(result, code, form) {
+    const opt = (qs, codeList, c) => { const i = codeList.indexOf(c); return i >= 0 ? qs.opts[i] : ""; };
+    const [p1, p2, p3] = Q.POS_QS;
+    return {
+      nickname:form.nickname.trim(), email:form.email.trim(), phone:form.phone.trim(), age:form.age || "", website:form.website || "",
+      type:result.typeName, u:Math.round(result.spectrum.u), r:Math.round(result.spectrum.r), m:Math.round(result.spectrum.m),
+      life:opt(Q.SAFE_QS[0], Q.SAFE_QS[0].codes, result.life),
+      practice:result.practices.map(c => opt(p1, p1.codes, c)).join("、"),
+      years:result.years ? opt(p2, p2.codes, result.years) : "", goal:opt(p3, p3.codes, result.goal),
+      know:`${result.knowCorrect} / ${Q.KNOW_QS.length}`, consent:"同意",
+      url:resultUrl(code), code, version:result.version,
+    };
+  }
+  // 學習規劃兩題 → 試算表文字
+  function extraPayload(extra) {
+    const [x1, x2] = Q.EXTRA_QS, e = extra || [];
+    return {
+      interests:Array.isArray(e[0]) ? e[0].map(o => x1.sheet[o]).join("、") : "",
+      budget:e[1] !== null && e[1] !== undefined ? x2.opts[e[1]] : "",
+    };
+  }
+  // 稱呼、年齡必填；Email 和電話至少填一個（有填的那欄格式要對）；一定要勾同意
+  function checkContact(form, consent) {
+    const email = form.email.trim(), phone = form.phone.trim();
+    const emailBad = !!email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const phoneBad = !!phone && !/^[0-9+\-()\s]{8,20}$/.test(phone);
+    const missing = [!form.nickname.trim() && "稱呼", !form.age && "年齡", !(email || phone) && "Email 或電話（擇一）", !consent && "勾選同意"].filter(Boolean);
+    return { emailBad, phoneBad, missing, ok:!missing.length && !emailBad && !phoneBad };
+  }
+  // 每個收件網址各送一次，只要有一個送出成功就算完成
+  function post(body) {
+    return Promise.all(SUBMIT_URLS.map(u => fetch(u, { method:"POST", mode:"no-cors", body:new URLSearchParams(body) }).then(() => true, () => false)))
+      .then(ok => ok.some(Boolean));
+  }
+  const newLeadId = () => Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  return { CFG, SUBMIT_URLS, sentFor, markSent, checkRecordedSubmission, contactPayload, extraPayload, checkContact, post, newLeadId };
+})();
+
+// 年齡區間（單選小按鈕）：開始前的填資料頁與結果頁底部表單共用；value 存選項文字，直接寫進試算表
+function AgePicker({ value, onChange }) {
+  const { CLR } = window.QUIZ_SHARED;
+  return (
+    <div role="radiogroup" aria-label="年齡" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(96px, 1fr))", gap:8 }}>
+      {window.QUIZ.AGE_OPTS.map(t => {
+        const on = value === t;
+        return (
+          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => onChange(t)}
+            style={{ padding:"9px 6px", borderRadius:10, fontSize:14, fontFamily:"inherit", cursor:"pointer", whiteSpace:"nowrap",
+              border:`${on ? 2 : 1}px solid ${on ? CLR.accent : CLR.border}`, background:on ? "#F3EEFF" : "#fff", color:on ? CLR.accent : CLR.text, fontWeight:on ? 700 : 400 }}>
+            {t}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── 測驗畫面 ──
 const QuizApp = (() => {
@@ -1180,7 +1314,11 @@ const STEPS = [
   ...Q.SCALE_QS.map((_, i) => ({ k:"scale", i })),
   { k:"chapter", c:1 }, ...Q.KNOW_QS.map((_, i) => ({ k:"know", i })),
   { k:"chapter", c:2 }, ...Q.SAFE_QS.map((_, i) => ({ k:"safe", i })), ...Q.POS_QS.map((_, i) => ({ k:"pos", i })), ...Q.BEHAV_QS.map((_, i) => ({ k:"behav", i })),
+  // 學習規劃 2 題：不計分，只跟聯絡資料一起送進試算表
+  ...Q.EXTRA_QS.map((_, i) => ({ k:"extra", i })),
 ];
+// 有設收件網址時，按「開始測驗」後先填聯絡資料才進題目
+const NEED_LEAD = CONTACT.SUBMIT_URLS.length > 0;
 const TOTAL_Q = STEPS.filter(s => s.k !== "chapter").length;
 const skipStep = (step, answers) => (step.k === "pos" && isSkipped(Q.POS_QS[step.i], answers.pos)) || (step.k === "behav" && isSkipped(Q.BEHAV_QS[step.i], answers.pos));
 
@@ -1230,7 +1368,7 @@ function TopBar({ done, label }) {
   );
 }
 
-function OptionButton({ text, selected, state, disabled, onClick }) {
+function OptionButton({ text, selected, state, disabled, onClick, wide }) {
   const tone = state === "correct" || state === "answer" ? { b:CLR.good, bg:CLR.goodBg, c:CLR.good }
     : state === "wrong" ? { b:CLR.bad, bg:CLR.badBg, c:CLR.bad }
     : selected ? { b:CLR.accent, bg:"#F3EEFF", c:CLR.accent } : { b:CLR.border, bg:CLR.card, c:CLR.text };
@@ -1238,7 +1376,7 @@ function OptionButton({ text, selected, state, disabled, onClick }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{ ...cardS, padding:"14px 16px", textAlign:"left", fontSize:15, lineHeight:1.7,
       color:tone.c, background:tone.bg, border:`${selected || state ? 2 : 1}px solid ${tone.b}`, cursor:disabled ? "default" : "pointer",
-      transition:"all 0.15s", display:"flex", alignItems:"center", gap:10 }}>
+      transition:"all 0.15s", display:"flex", alignItems:"center", gap:10, gridColumn:wide ? "1 / -1" : undefined }}>
       <span style={{ flex:1 }}>{text}</span>
       {tag && <span style={{ fontSize:12, fontWeight:600, whiteSpace:"nowrap" }}>{tag}</span>}
     </button>
@@ -1355,7 +1493,7 @@ function CoverScreen({ onStart, resume, onResume }) {
         )}
         <div style={{ textAlign:"center" }}>
           <button id="start-quiz" onClick={onStart} style={{ ...primaryBtn(), padding:"15px 48px", fontSize:17, boxShadow:"0 8px 22px rgba(109,40,217,0.28)", display:"inline-flex", alignItems:"center", gap:10 }}><Icon name="play" size={18} color="#fff" />{resume ? "重新開始" : "開始測驗"}</button>
-          <p style={{ fontSize:13, color:CLR.sub, marginTop:10 }}>{TOTAL_Q - 2}～{TOTAL_Q} 題・約 5～8 分鐘・沒有對錯</p>
+          <p style={{ fontSize:13, color:CLR.sub, marginTop:10 }}>{TOTAL_Q - 2}～{TOTAL_Q} 題・約 6～9 分鐘・沒有對錯</p>
           <p style={{ fontSize:12, color:CLR.sub, marginTop:4 }}>結果僅供自我了解與學習規劃，不是針對個人的投資建議</p>
         </div>
 
@@ -1410,9 +1548,10 @@ function QuestionScreen({ step, pos, answers, orders, onAnswer, onNext, onBack, 
   if (k === "safe")  { const q = Q.SAFE_QS[i];  text = q.text; opts = q.opts.map((t, o) => ({ o, t })); selected = answers.safe[i]; label = `你的現況 ${i + 1} / ${nowTotal}`; }
   if (k === "pos")   { const q = Q.POS_QS[i];   text = q.text; opts = q.opts.map((t, o) => ({ o, t })); selected = answers.pos[i]; label = `你的現況 ${Q.SAFE_QS.length + i + 1} / ${nowTotal}`; }
   if (k === "behav") { const q = Q.BEHAV_QS[i]; text = q.text; opts = q.opts.map((t, o) => ({ o, t })); selected = answers.behav[i]; label = `你的現況 ${Q.SAFE_QS.length + Q.POS_QS.length + i + 1} / ${nowTotal}`; }
-  const mq = k === "pos" ? Q.POS_QS[i] : k === "behav" ? Q.BEHAV_QS[i] : null;
+  if (k === "extra") { const q = Q.EXTRA_QS[i]; text = q.text; note = q.note; opts = q.opts.map((t, o) => ({ o, t })); selected = answers.extra[i]; label = `最後 ${Q.EXTRA_QS.length} 題：學習規劃 ${i + 1} / ${Q.EXTRA_QS.length}`; hint = "不影響測驗結果"; }
+  const mq = k === "pos" ? Q.POS_QS[i] : k === "behav" ? Q.BEHAV_QS[i] : k === "extra" ? Q.EXTRA_QS[i] : null;
   const isMulti = !!(mq && mq.multi);
-  if (isMulti) hint = "可複選";
+  if (isMulti) hint = k === "extra" ? "可複選・不影響測驗結果" : "可複選";
   const canNext = isMulti ? validMulti(mq, selected) : selected !== null;
   const isLast = step === STEPS[STEPS.length - 1];
 
@@ -1434,9 +1573,10 @@ function QuestionScreen({ step, pos, answers, orders, onAnswer, onNext, onBack, 
         {hint && <p style={{ fontSize:12, color:CLR.accent, fontWeight:600, marginBottom:note ? 2 : 8 }}>{hint}</p>}
         {note && <p style={{ fontSize:12, color:CLR.sub, marginBottom:8 }}>{note}</p>}
         <h2 style={{ fontSize:19, fontWeight:700, color:CLR.text, lineHeight:1.7, marginBottom:20, whiteSpace:"pre-line" }}>{text}</h2>
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {/* cols:2 的題目排兩欄（選項短的複選題），互斥選項（例如「還沒想過」）橫跨整列 */}
+        <div style={mq && mq.cols > 1 ? { display:"grid", gridTemplateColumns:`repeat(${mq.cols}, minmax(0, 1fr))`, gap:10 } : { display:"flex", flexDirection:"column", gap:10 }}>
           {opts.map(({ o, t }) => (
-            <OptionButton key={o} text={t} selected={isKnow ? (!revealed && pending === o) : (isMulti ? (selected || []).includes(o) : selected === o)}
+            <OptionButton key={o} text={t} wide={mq && mq.cols > 1 && (mq.exclusive || []).includes(o)} selected={isKnow ? (!revealed && pending === o) : (isMulti ? (selected || []).includes(o) : selected === o)}
               state={optState(o)} disabled={revealed} onClick={() => (isKnow ? setPending(o) : onAnswer(o))} />
           ))}
         </div>
@@ -1450,11 +1590,77 @@ function QuestionScreen({ step, pos, answers, orders, onAnswer, onNext, onBack, 
           </div>
         )}
         <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
-          <button onClick={onBack} style={ghostBtn}>{pos === 0 ? "回封面" : "上一題"}</button>
+          <button onClick={onBack} style={ghostBtn}>{pos === 0 ? (NEED_LEAD ? "上一步" : "回封面") : "上一題"}</button>
           {isKnow && !revealed
             ? <button onClick={() => pending !== null && onAnswer(pending)} disabled={pending === null} style={primaryBtn(pending !== null)}>確定答案</button>
             : <button onClick={onNext} disabled={!canNext} style={primaryBtn(canNext)}>{isLast ? "看結果" : "下一題"}</button>}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// 開始作答前的填資料頁：送出後試算表先出現這個人（stage=start），做完測驗再補上結果。
+// 從第 1 題按「上一題」回來時，帶著剛剛填的資料；沒改就不重送，改了用同一個名單編號更新那一列
+function InfoScreen({ lead, onDone, onBack }) {
+  const CFG = CONTACT.CFG;
+  const [form, setForm] = useState(() => ({ nickname:lead ? lead.nickname : "", age:lead ? lead.age : "", email:lead ? lead.email : "", phone:lead ? lead.phone : "", website:"" }));
+  const [consent, setConsent] = useState(!!lead);
+  const [sending, setSending] = useState(false);
+  const { emailBad, phoneBad, missing, ok } = CONTACT.checkContact(form, consent);
+  const canSend = ok && !sending;
+  const set = (k) => (e) => setForm({ ...form, [k]:e.target.value });
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!canSend) return;
+    const next = { id:lead ? lead.id : CONTACT.newLeadId(), nickname:form.nickname.trim(), age:form.age, email:form.email.trim(), phone:form.phone.trim() };
+    const same = lead && ["nickname", "age", "email", "phone"].every(k => lead[k] === next[k]);
+    // 機器人陷阱欄位有值：照樣讓它往下走，但不送資料
+    if (!same && !form.website) {
+      setSending(true);
+      // 網路不穩也不擋人作答：最多等 4 秒就往下走，做完測驗時會再把聯絡資料連同結果送一次
+      await Promise.race([
+        CONTACT.post({ lead:next.id, stage:"start", nickname:next.nickname, age:next.age, email:next.email, phone:next.phone, website:"", consent:"同意", version:Q.VERSION }),
+        new Promise(r => setTimeout(r, 4000)),
+      ]);
+    }
+    onDone(next);
+  };
+  const input = { width:"100%", padding:"11px 12px", borderRadius:10, border:`1px solid ${CLR.border}`, fontSize:15, fontFamily:"inherit", background:"#fff", color:CLR.text };
+  const fl = { display:"block", fontSize:13, fontWeight:600, color:CLR.sub, marginBottom:4 };
+  return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(180deg, #F3EEFF 0%, ${CLR.bg} 320px)`, paddingBottom:40 }}>
+      <div style={{ ...wrap, paddingTop:28, animation:"pop 0.35s ease" }}>
+        <p style={{ fontSize:13, fontWeight:700, color:CLR.accent, letterSpacing:2, textAlign:"center", marginBottom:16 }}>投資者性格探索</p>
+        <form onSubmit={submit} style={{ ...cardS, padding:"24px 22px", display:"flex", flexDirection:"column", gap:14 }}>
+          <div>
+            <p style={{ fontSize:13, color:CLR.accent, fontWeight:600, marginBottom:6 }}>開始前・約 30 秒</p>
+            <h2 style={{ fontSize:21, fontWeight:800, color:CLR.text, lineHeight:1.5 }}>{CFG.START_FORM_TITLE || "開始之前，先留下你的聯絡方式"}</h2>
+            {CFG.START_FORM_DESC && <p style={{ fontSize:14, color:CLR.sub, lineHeight:1.8, marginTop:6 }}>{CFG.START_FORM_DESC}</p>}
+          </div>
+          <label><span style={fl}>稱呼<span style={{ color:CLR.bad }}> *</span></span><input id="lead-name" style={input} value={form.nickname} onChange={set("nickname")} maxLength={40} autoComplete="nickname" placeholder="例如：小明、王先生" required /></label>
+          <div id="lead-age"><span style={fl}>年齡<span style={{ color:CLR.bad }}> *</span></span><AgePicker value={form.age} onChange={(v) => setForm({ ...form, age:v })} /></div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10, padding:"12px", borderRadius:10, background:CLR.bg }}>
+            <p style={{ fontSize:13, fontWeight:600, color:CLR.sub }}>聯絡方式<span style={{ color:CLR.bad }}> *</span><span style={{ fontWeight:400 }}>　Email 和電話至少填一個</span></p>
+            <label><span style={fl}>Email</span><input id="lead-email" style={input} type="email" value={form.email} onChange={set("email")} maxLength={120} autoComplete="email" inputMode="email" />
+              {emailBad && <span style={{ fontSize:12, color:CLR.bad }}>Email 格式好像不太對</span>}</label>
+            <label><span style={fl}>電話</span><input id="lead-phone" style={input} type="tel" value={form.phone} onChange={set("phone")} maxLength={20} autoComplete="tel" inputMode="tel" />
+              {phoneBad && <span style={{ fontSize:12, color:CLR.bad }}>電話請填數字，例如 0912345678</span>}</label>
+          </div>
+          <input className="sr-only" tabIndex={-1} aria-hidden="true" autoComplete="off" value={form.website} onChange={set("website")} />
+          <label style={{ display:"flex", gap:8, alignItems:"flex-start", fontSize:13, color:CLR.sub, lineHeight:1.7, cursor:"pointer" }}>
+            <input id="lead-consent" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop:5, width:16, height:16, flexShrink:0 }} />
+            <span>{CFG.CONSENT_TEXT}</span>
+          </label>
+          {missing.length > 0 && <p style={{ fontSize:12, color:CLR.sub, textAlign:"center" }}>還差：{missing.join("、")}</p>}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12 }}>
+            <button type="button" onClick={onBack} style={ghostBtn}>回封面</button>
+            <button id="lead-submit" type="submit" disabled={!canSend} style={{ ...primaryBtn(canSend), display:"inline-flex", alignItems:"center", gap:8 }}>
+              {sending ? "送出中…" : (CFG.START_SUBMIT_LABEL || "開始作答")}{!sending && <Icon name="chevron" size={16} color={canSend ? "#fff" : "#A5A5B5"} />}
+            </button>
+          </div>
+        </form>
+        <p style={{ fontSize:12, color:CLR.sub, textAlign:"center", marginTop:12, lineHeight:1.7 }}>做完後完整結果直接打開，不用再填一次</p>
       </div>
     </div>
   );
@@ -1509,26 +1715,40 @@ function Reveal({ result, href }) {
 }
 
 function App() {
-  const fresh = () => ({ scale:Array(Q.SCALE_QS.length).fill(null), know:Array(Q.KNOW_QS.length).fill(null), safe:Array(Q.SAFE_QS.length).fill(null), pos:Array(Q.POS_QS.length).fill(null), behav:Array(Q.BEHAV_QS.length).fill(null) });
+  const fresh = () => ({ scale:Array(Q.SCALE_QS.length).fill(null), know:Array(Q.KNOW_QS.length).fill(null), safe:Array(Q.SAFE_QS.length).fill(null), pos:Array(Q.POS_QS.length).fill(null), behav:Array(Q.BEHAV_QS.length).fill(null), extra:Array(Q.EXTRA_QS.length).fill(null) });
   const [saved, setSaved] = useState(readProgress);
   const [pos, setPos] = useState(0);
   const [answers, setAnswers] = useState(fresh);
   const [orders, setOrders] = useState(() => saved ? saved.orders : Q.SCALE_QS.map(q => shuffled(q.opts.length)));
   const [reveal, setReveal] = useState(null);
   const [started, setStarted] = useState(false);
+  // 填資料頁：askInfo 記住填完要做什麼（"fresh" 從頭開始／"resume" 接著上次／"back" 從第 1 題退回來）；lead＝這次作答填的聯絡資料
+  const [askInfo, setAskInfo] = useState(null);
+  const [lead, setLead] = useState(null);
   const advancing = useRef(false);
   const timer = useRef(null);
 
-  // 每答一題就存一次；看結果時清掉
-  useEffect(() => { if (started && !reveal) writeProgress({ pos, answers, orders }); }, [started, pos, answers, orders, reveal]);
-  const startFresh = () => {
-    clearProgress(); setSaved(null);
+  // 每答一題就存一次（聯絡資料也一起存，接著作答時不用再填）；看結果時清掉
+  useEffect(() => { if (started && !reveal) writeProgress({ pos, answers, orders, lead }); }, [started, pos, answers, orders, reveal, lead]);
+  const doFresh = (l) => {
+    clearProgress(); setSaved(null); setLead(l || null);
     setAnswers(fresh()); setPos(0); setOrders(Q.SCALE_QS.map(q => shuffled(q.opts.length)));
-    setStarted(true); window.scrollTo({ top:0 });
+    setAskInfo(null); setStarted(true); window.scrollTo({ top:0 });
   };
+  const doResume = (l) => {
+    // 舊版存的進度沒有學習規劃兩題，補上空白
+    setAnswers({ ...fresh(), ...saved.answers }); setOrders(saved.orders); setPos(Math.min(saved.pos, STEPS.length - 1)); setLead(l || null);
+    setAskInfo(null); setStarted(true); window.scrollTo({ top:0 });
+  };
+  const startFresh = () => { if (NEED_LEAD) { setAskInfo("fresh"); window.scrollTo({ top:0 }); } else doFresh(null); };
   const resumeSaved = () => {
-    setAnswers(saved.answers); setOrders(saved.orders); setPos(Math.min(saved.pos, STEPS.length - 1));
-    setStarted(true); window.scrollTo({ top:0 });
+    if (NEED_LEAD && !saved.lead) { setAskInfo("resume"); window.scrollTo({ top:0 }); return; }
+    doResume(saved.lead);
+  };
+  // "back"＝從第 1 題退回來改資料：答案保留，直接回到題目
+  const infoDone = (l) => {
+    if (askInfo === "back") { setLead(l); setAskInfo(null); setStarted(true); window.scrollTo({ top:0 }); return; }
+    askInfo === "resume" ? doResume(l) : doFresh(l);
   };
 
   const step = STEPS[pos];
@@ -1539,7 +1759,13 @@ function App() {
     if (!code) return;
     window.scrollTo({ top:0 });
     clearProgress();
-    setReveal({ result:Q.calcResult(a), href:LINK.result(code) });
+    const result = Q.calcResult(a);
+    if (lead) {
+      // 同一個名單編號補上結果與學習規劃兩題；開始前已經留過聯絡資料，結果直接解鎖
+      CONTACT.post({ ...CONTACT.contactPayload(result, code, lead), ...CONTACT.extraPayload(a.extra), lead:lead.id, stage:"done" });
+      CONTACT.markSent(code);
+    }
+    setReveal({ result, href:LINK.result(code) });
   };
   // 前進／後退時跳過依作答不需要回答的題目（例如沒投資過就不問年資）
   const next = (a = answers) => {
@@ -1550,19 +1776,21 @@ function App() {
   };
   const back = () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; advancing.current = false; }
-    if (pos === 0) { setStarted(false); window.scrollTo({ top:0 }); return; }
+    // 第 1 題往回：有填資料頁就回填資料頁（帶著剛剛填的），沒有就回封面
+    if (pos === 0) { setStarted(false); if (NEED_LEAD) setAskInfo("back"); window.scrollTo({ top:0 }); return; }
     let p = pos - 1;
     while (p > 0 && skipStep(STEPS[p], answers)) p--;
     if (p >= 0) { setPos(p); window.scrollTo({ top:0 }); }
   };
 
   const answer = (o) => {
-    const a = { ...answers, scale:[...answers.scale], know:[...answers.know], safe:[...answers.safe], pos:[...answers.pos], behav:[...answers.behav] };
+    const a = { ...answers, scale:[...answers.scale], know:[...answers.know], safe:[...answers.safe], pos:[...answers.pos], behav:[...answers.behav], extra:[...answers.extra] };
     if (step.k === "scale") a.scale[step.i] = o;
     if (step.k === "know") { if (a.know[step.i] !== null) return; a.know[step.i] = o; }
     if (step.k === "safe") a.safe[step.i] = o;
-    const mq = step.k === "pos" ? Q.POS_QS[step.i] : step.k === "behav" ? Q.BEHAV_QS[step.i] : null;
+    const mq = step.k === "pos" ? Q.POS_QS[step.i] : step.k === "behav" ? Q.BEHAV_QS[step.i] : step.k === "extra" ? Q.EXTRA_QS[step.i] : null;
     if (step.k === "behav") a.behav[step.i] = mq.multi ? toggleMulti(mq, a.behav[step.i], o) : o;
+    if (step.k === "extra") a.extra[step.i] = mq.multi ? toggleMulti(mq, a.extra[step.i], o) : o;
     if (step.k === "pos") {
       a.pos[step.i] = mq.multi ? toggleMulti(mq, a.pos[step.i], o) : o;
       Q.POS_QS.forEach((q, j) => { if (isSkipped(q, a.pos)) a.pos[j] = null; });
@@ -1577,6 +1805,7 @@ function App() {
   };
 
   if (reveal) return <div style={{ fontFamily:FONT }}><Reveal result={reveal.result} href={reveal.href} /></div>;
+  if (!started && askInfo) return <div style={{ fontFamily:FONT }}><InfoScreen lead={lead} onDone={infoDone} onBack={() => { setAskInfo(null); window.scrollTo({ top:0 }); }} /></div>;
   if (!started) {
     const resume = saved && { done:STEPS.slice(0, saved.pos).filter(s => s.k !== "chapter").length + 1 };
     return <div style={{ fontFamily:FONT }}><CoverScreen onStart={startFresh} resume={resume} onResume={resumeSaved} /></div>;
@@ -2258,93 +2487,23 @@ function ResultTab({ result, sample }) {
   );
 }
 
-// ── 聯絡表單：送到 config.js 設定的 Google Apps Script，網址留空就不顯示 ──
-const CFG = window.QUIZ_CONFIG || {};
-const SENT_KEY = "investor-quiz-sent-v8-lite";
-const SUBMIT_URLS = [].concat(CFG.SUBMIT_URL || []).filter(Boolean);
-// 送出過聯絡資料的作答代碼清單（JSON 陣列）；舊版只存一個代碼字串，讀的時候一併相容
-function sentCodes() {
-  try {
-    const v = localStorage.getItem(SENT_KEY);
-    if (!v) return [];
-    if (v[0] !== "[") return [v];
-    const list = JSON.parse(v);
-    return Array.isArray(list) ? list : [];
-  } catch (e) { return []; }
-}
-// 這份結果是否已送出過聯絡資料：解鎖學習地圖與教練的信、表單顯示已送出，都只看這一個判斷
-function sentFor(code) { return !!code && sentCodes().includes(code); }
-// Only the receipt status is returned. Opening a result never resubmits contact data.
-function checkRecordedSubmission(code) {
-  if (!/^8-[a-zA-Z0-9]{1,100}$/.test(String(code || "")) || !SUBMIT_URLS[0]) return Promise.resolve(false);
-  return new Promise(resolve => {
-    const callback = "quizReceipt_" + Math.random().toString(36).slice(2);
-    const script = document.createElement("script");
-    let timer;
-    const finish = recorded => {
-      clearTimeout(timer);
-      script.remove();
-      // Keep a harmless callback briefly in case a timed-out response arrives late.
-      window[callback] = () => {};
-      setTimeout(() => { delete window[callback]; }, 60000);
-      resolve(recorded === true);
-    };
-    window[callback] = data => finish(!!data && data.recorded === true);
-    script.onerror = () => finish(false);
-    timer = setTimeout(() => finish(false), 15000);
-    const url = new URL(SUBMIT_URLS[0]);
-    url.searchParams.set("receipt", code);
-    url.searchParams.set("callback", callback);
-    script.src = url.toString();
-    document.head.appendChild(script);
-  });
-}
-function markSent(code) {
-  try { if (!sentFor(code)) localStorage.setItem(SENT_KEY, JSON.stringify([...sentCodes(), code])); } catch (e) {}
-}
-// 寫進試算表的「結果網址」：config.js 有設正式網址（http/https 開頭）就一律用它組，
-// 從本機檔案、單檔版或轉傳的檔作答也點得開；沒設或格式不對，才退回當下這一頁的網址
-function resultUrl(code) {
-  const site = String(CFG.SITE_URL || "").trim();
-  const base = /^https?:\/\//i.test(site) ? site : window.location.href;
-  return base.split("#")[0] + LINK.result(code);
-}
-function contactPayload(result, code, form) {
-  const opt = (qs, codeList, c) => { const i = codeList.indexOf(c); return i >= 0 ? qs.opts[i] : ""; };
-  const [p1, p2, p3] = Q.POS_QS;
-  return {
-    nickname:form.nickname.trim(), email:form.email.trim(), phone:form.phone.trim(), website:form.website,
-    type:result.typeName, u:Math.round(result.spectrum.u), r:Math.round(result.spectrum.r), m:Math.round(result.spectrum.m),
-    life:opt(Q.SAFE_QS[0], Q.SAFE_QS[0].codes, result.life),
-    practice:result.practices.map(c => opt(p1, p1.codes, c)).join("、"),
-    years:result.years ? opt(p2, p2.codes, result.years) : "", goal:opt(p3, p3.codes, result.goal),
-    know:`${result.knowCorrect} / ${Q.KNOW_QS.length}`, consent:"同意",
-    url:resultUrl(code), code, version:result.version,
-  };
-}
+// ── 聯絡表單：送到 config.js 設定的 Google Apps Script，網址留空就不顯示（送出用的共用函式在最上面的 CONTACT） ──
+const { CFG, SUBMIT_URLS, sentFor, markSent, checkRecordedSubmission, contactPayload, checkContact, post } = CONTACT;
 function ContactForm({ result, code, onSent }) {
   const sentBefore = sentFor(code);
-  const [form, setForm] = useState({ nickname:"", email:"", phone:"", website:"" });
+  const [form, setForm] = useState({ nickname:"", age:"", email:"", phone:"", website:"" });
   const [consent, setConsent] = useState(false);
   const [state, setState] = useState(sentBefore ? "sent" : "idle");
   if (!SUBMIT_URLS.length) return null;
-  const emailBad = form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
-  const phoneBad = form.phone.trim() && !/^[0-9+\-()\s]{8,20}$/.test(form.phone.trim());
-  // 稱呼必填；Email 和電話至少填一個（有填的那欄格式要對）
-  const hasName = !!form.nickname.trim();
-  const hasContact = !!(form.email.trim() || form.phone.trim());
-  const missing = [!hasName && "稱呼", !hasContact && "Email 或電話（擇一）", !consent && "勾選同意"].filter(Boolean);
-  const canSend = !missing.length && !emailBad && !phoneBad && state !== "sending";
+  const { emailBad, phoneBad, missing, ok:formOk } = checkContact(form, consent);
+  const canSend = formOk && state !== "sending";
   const set = (k) => (e) => setForm({ ...form, [k]:e.target.value });
   const submit = async (e) => {
     e.preventDefault();
     if (!canSend) return;
     setState("sending");
     try {
-      // 每個收件網址各送一次，只要有一個送出成功就算完成
-      const body = contactPayload(result, code, form);
-      const ok = await Promise.all(SUBMIT_URLS.map(u => fetch(u, { method:"POST", mode:"no-cors", body:new URLSearchParams(body) }).then(() => true, () => false)));
-      if (!ok.some(Boolean)) throw new Error("all failed");
+      if (!(await post({ ...contactPayload(result, code, form), stage:"done" }))) throw new Error("all failed");
       markSent(code);
       setState("sent");
       if (onSent) onSent();
@@ -2364,6 +2523,7 @@ function ContactForm({ result, code, onSent }) {
         <p style={{ fontSize:13, color:CLR.sub, lineHeight:1.7, marginTop:4 }}>{CFG.FORM_DESC}</p>
       </div>
       <label><span style={fl}>稱呼<span style={{ color:CLR.bad }}> *</span></span><input style={input} value={form.nickname} onChange={set("nickname")} maxLength={40} autoComplete="nickname" placeholder="例如：小明、王先生" required /></label>
+      <div><span style={fl}>年齡<span style={{ color:CLR.bad }}> *</span></span><AgePicker value={form.age} onChange={(v) => setForm({ ...form, age:v })} /></div>
       <div style={{ display:"flex", flexDirection:"column", gap:10, padding:"12px", borderRadius:10, background:CLR.bg }}>
         <p style={{ fontSize:13, fontWeight:600, color:CLR.sub }}>聯絡方式<span style={{ color:CLR.bad }}> *</span><span style={{ fontWeight:400 }}>　Email 和電話至少填一個</span></p>
         <label><span style={fl}>Email</span><input style={input} type="email" value={form.email} onChange={set("email")} maxLength={120} autoComplete="email" inputMode="email" />

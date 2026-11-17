@@ -1,6 +1,6 @@
 /* 投資者性格探索 v8：題目、文案與計分（測驗頁與結果頁共用）；客群 15～40 歲，以 20～30 歲為主 */
 const QUIZ = (() => {
-  const VERSION = "8.1";
+  const VERSION = "8.3";
 
   // ── 第 1 關：性格情境題（3 維度 × 5 題）──
   // s = 計分（1 = 追求穩定／借鑒他人／保本優先，4 = 接受波動／自己判斷／成長優先）
@@ -84,6 +84,20 @@ const QUIZ = (() => {
       opts:["聽到身邊的人或社群在討論，之後跟著買進","用過融資、借錢投資，或做過當沖、期貨、選擇權、槓桿 ETF","市場或手上某一檔大跌時，賣掉了大部分持股（自己決定賣、或被追繳斷頭都算）","有一檔股票或一種加密貨幣（公司配發的也算，不含 ETF）占了投資資產三成以上","以上都沒有遇過"],
       codes:["follow","lever","panic","concentrate","none"] },
   ];
+  // ── 學習規劃（測驗最後 2 題）：不計分、不影響類型，也不寫進作答代碼；只跟聯絡資料一起送進試算表 ──
+  // 試算表存的是選項文字；複選題用「、」串起來
+  // 年齡：放在開始前的填資料頁（結果頁底部表單也有），區間不重疊；只送進試算表，不計分
+  const AGE_OPTS = ["未滿 18 歲","18～24 歲","25～29 歲","30～39 歲","40～49 歲","50～59 歲","60～69 歲","70 歲以上"];
+
+  const EXTRA_QS = [
+    { id:"x1", text:"下面這些投資領域，你曾經想了解、或現在想了解的有哪些？（可複選）", multi:true, exclusive:[10], cols:2,
+      opts:["基本面（看公司賺不賺錢、值多少）","籌碼面（看法人、大戶在買還是賣）","技術面（看股價走勢圖找買賣點）","基金","ETF","美股","債券","期貨","選擇權","區塊鏈（加密貨幣等）","還沒想過，想先從最基礎的開始"],
+      sheet:["基本面","籌碼面","技術面","基金","ETF","美股","債券","期貨","選擇權","區塊鏈","還沒想過"] },
+    { id:"x2", text:"為了達成你的投資目標，你未來每個月預計花多少錢在投資學習上？",
+      note:"參考算法：打算投入市場的資金如果是 50 萬元，每月學習預算大約抓 5,000 元",
+      opts:["2,000 元以下","2,000～3,000 元","3,000～4,000 元","4,000～5,000 元","5,000～6,000 元","6,000 元以上"] },
+  ];
+
   // 只有「別人推薦就買」才往借鑒他人修正；自己查證過（checked）與看新聞（media）都不調整
   const SOURCE_FOLLOW = ["social","feed","guru"];
   const PRACTICE_RANK = ["trader","picker","passive","delegated","crypto","employee","family","trying","exited","none"];
@@ -775,7 +789,7 @@ const QUIZ = (() => {
     return base;
   }
 
-  return { VERSION, typeTags, reportFor, routeLine, neighborLine, SCALE_QS, KNOW_QS, SAFE_QS, POS_QS, BEHAV_QS, DIMS, DIM_TEXT, TYPE_KEY, TYPES, REPORT_TITLES, REPORTS, ROUTES, STAGES, MODULES,
+  return { VERSION, typeTags, reportFor, routeLine, neighborLine, SCALE_QS, KNOW_QS, SAFE_QS, POS_QS, BEHAV_QS, EXTRA_QS, AGE_OPTS, DIMS, DIM_TEXT, TYPE_KEY, TYPES, REPORT_TITLES, REPORTS, ROUTES, STAGES, MODULES,
            START_TEXT, ZONE_LABEL, LIFE, LETTER_OPEN, LETTER_QUOTE, calcResult, buildLetter };
 })();
 if (typeof module !== "undefined") module.exports = QUIZ;
